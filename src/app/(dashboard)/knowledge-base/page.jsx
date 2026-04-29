@@ -51,7 +51,7 @@ function UploadDocuments() {
         <div style={{ fontSize: '32px', marginBottom: '16px' }}>📂</div>
         <h3 style={{ marginBottom: '8px' }}>Drag & drop documents here</h3>
         <p className="text-muted" style={{ marginBottom: '16px' }}>Accepts PDF, DOCX (Brochure, Syllabus, FAQ, Pricing)</p>
-        <button className="btn btn-outline" onClick={(e) => { e.stopPropagation(); document.getElementById('file-upload').click(); }}>Browse Files</button>
+        <button className="btn-outline" onClick={(e) => { e.stopPropagation(); document.getElementById('file-upload').click(); }}>Browse Files</button>
         <input 
           type="file" 
           id="file-upload" 
@@ -205,122 +205,332 @@ function AITonePersona() {
 }
 
 function PitchScript() {
-  const [sections, setSections] = useState([
-    {
-      id: 1,
-      title: "Section 1: The Opening (Identity & Relevance)",
-      description: "Define how the AI introduces itself and establishes the reason for calling.",
-      script: "Hi, this is {AgentName} from {UniversityName}. I'm calling because I saw you recently inquired about our Computer Science program. Is now a good time to chat?",
-      instruction: ""
-    },
-    {
-      id: 2,
-      title: "Section 2: Discovery & Qualification (Pain Points)",
-      description: "Guide the AI to ask questions to understand the student's goals and challenges.",
-      script: "Great! Tell me, what got you interested in studying Computer Science right now? Are you looking to advance your career or perhaps pivot into a new field?",
-      instruction: ""
-    },
-    {
-      id: 3,
-      title: "Section 3: Value Proposition",
-      description: "Explain how the university solves their pain points.",
-      script: "That's fantastic. Our program is actually designed specifically for career advancers like you. We offer flexible evening classes and connect you directly with local tech companies through our internship network.",
-      instruction: ""
-    },
-    {
-      id: 4,
-      title: "Section 4: Objection Handling",
-      description: "Provide the AI with default responses to common objections (e.g., price, time).",
-      script: "I completely understand that balancing work and study is a concern. Many of our students are working professionals, and we structure our modules to require about 10-15 hours a week so it remains manageable without sacrificing your current job.",
-      instruction: ""
-    },
-    {
-      id: 5,
-      title: "Section 5: The Close (Secure Commitment)",
-      description: "Define the final call to action to secure a meeting, application, or payment.",
-      script: "Considering what we've discussed, would it make sense for us to schedule a brief 10-minute discovery call next week with one of our specialized academic advisors to map out your potential timeline?",
-      instruction: ""
-    }
+  const [activeSection, setActiveSection] = useState('brain');
+
+  // 1. Conversation Brain
+  const [intents, setIntents] = useState([
+    { id: 1, name: 'Fee Objection', triggers: 'expensive, high fees', response: 'I completely understand that managing tuition is a priority. We do have flexible monthly payment plans and scholarship options we can explore. Would you like me to send you the details?', goal: 'Reduce hesitation', tone: 'Empathetic' }
   ]);
 
-  const handleScriptChange = (index, value) => {
-    const newSections = [...sections];
-    newSections[index].script = value;
-    setSections(newSections);
-  };
+  // 2. Behavior Rules
+  const [rules, setRules] = useState([
+    { id: 1, conditionType: 'User says', conditionValue: 'call me later', actionType: 'Schedule follow-up', actionConfig: 'after 2 days' }
+  ]);
 
-  const handleInstructionChange = (index, value) => {
-    const newSections = [...sections];
-    newSections[index].instruction = value;
-    setSections(newSections);
+  // 3. Script Control
+  const [scriptControl, setScriptControl] = useState({
+    generatedScript: "Hi, this is {AgentName} from {UniversityName}. I'm calling because you inquired about our program...",
+    editableScript: "Hi, this is {AgentName} from {UniversityName}. I'm calling because you inquired about our program...",
+    additionalInstructions: "Keep the tone energetic but professional."
+  });
+
+  // 4. Final Prompt Preview
+  const [previewPrompt, setPreviewPrompt] = useState("");
+
+  const sections = [
+    { id: 'brain', label: '1. Conversation Brain' },
+    { id: 'rules', label: '2. Behavior Rules' },
+    { id: 'script', label: '3. Script Control' },
+    { id: 'preview', label: '4. Final Prompt Preview' }
+  ];
+
+  const handleGeneratePreview = () => {
+    const prompt = `System Prompt:
+You are an AI Agent.
+
+Intents:
+${intents.map(i => `- Intent: ${i.name}\n  Triggers: [${i.triggers}]\n  Response: ${i.response}\n  Goal: ${i.goal}\n  Tone: ${i.tone}`).join('\n\n')}
+
+Rules:
+${rules.map(r => `- IF ${r.conditionType} "${r.conditionValue}" THEN ${r.actionType} "${r.actionConfig}"`).join('\n')}
+
+Base Script:
+${scriptControl.editableScript}
+
+Instructions:
+${scriptControl.additionalInstructions}`;
+    
+    setPreviewPrompt(prompt);
+    setActiveSection('preview');
   };
 
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       <div>
-        <h2 style={{ fontSize: '18px', marginBottom: '8px' }}>Pitch Script Framework</h2>
+        <h2 style={{ fontSize: '18px', marginBottom: '8px' }}>AI Agent Training Interface</h2>
         <p className="text-muted" style={{ fontSize: '14px', lineHeight: '1.5' }}>
-          Customize the AI's conversation flow. You can adjust the default script or add specific instructions for how the AI should behave during each phase of the call.
+          Configure how the AI talks and behaves. Define conversational intents, logical rules, and base scripts to train your agent.
         </p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-        {sections.map((section, index) => (
-          <div key={section.id} style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '32px', borderBottom: index < sections.length - 1 ? '1px solid var(--color-surface-high)' : 'none' }}>
-            <div>
-              <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '4px' }}>{section.title}</h3>
-              <p className="text-muted" style={{ fontSize: '13px' }}>{section.description}</p>
+      <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--color-surface-high)', paddingBottom: '12px', overflowX: 'auto' }}>
+        {sections.map(sec => (
+          <button
+            key={sec.id}
+            onClick={() => setActiveSection(sec.id)}
+            style={{
+              padding: '8px 16px',
+              background: activeSection === sec.id ? 'var(--color-surface-high)' : 'transparent',
+              color: activeSection === sec.id ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)',
+              borderRadius: '8px',
+              fontWeight: activeSection === sec.id ? '600' : '500',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              border: 'none',
+              transition: 'background 0.2s, color 0.2s'
+            }}
+          >
+            {sec.label}
+          </button>
+        ))}
+      </div>
+
+      <div>
+        {activeSection === 'brain' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '600' }}>Conversation Intents</h3>
+              <button 
+                className="btn-outline" 
+                onClick={() => setIntents([...intents, { id: Date.now(), name: '', triggers: '', response: '', goal: '', tone: 'Friendly' }])}
+                style={{ fontSize: '13px', padding: '6px 12px' }}
+              >
+                + Add Intent
+              </button>
+            </div>
+            
+            {intents.map((intent, index) => (
+              <div key={intent.id} style={{ padding: '24px', border: '1px solid var(--color-surface-high)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface-highest)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600' }}>Intent #{index + 1}</h4>
+                  <button 
+                    onClick={() => setIntents(intents.filter(i => i.id !== intent.id))}
+                    style={{ background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '13px' }}
+                  >
+                    Remove
+                  </button>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-on-surface-variant)' }}>Intent Name</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Fee Objection"
+                      style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--color-surface-high)', background: 'var(--color-surface)', color: 'var(--color-on-surface)', fontSize: '14px' }}
+                      value={intent.name}
+                      onChange={(e) => setIntents(intents.map(i => i.id === intent.id ? { ...i, name: e.target.value } : i))}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-on-surface-variant)' }}>Trigger Phrases (comma separated)</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. expensive, high fees"
+                      style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--color-surface-high)', background: 'var(--color-surface)', color: 'var(--color-on-surface)', fontSize: '14px' }}
+                      value={intent.triggers}
+                      onChange={(e) => setIntents(intents.map(i => i.id === intent.id ? { ...i, triggers: e.target.value } : i))}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-on-surface-variant)' }}>AI Response</label>
+                  <textarea 
+                    placeholder="How should the AI respond?"
+                    style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--color-surface-high)', background: 'var(--color-surface)', color: 'var(--color-on-surface)', fontSize: '14px', minHeight: '80px', resize: 'vertical', fontFamily: 'inherit' }}
+                    value={intent.response}
+                    onChange={(e) => setIntents(intents.map(i => i.id === intent.id ? { ...i, response: e.target.value } : i))}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-on-surface-variant)' }}>Goal</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Reduce hesitation"
+                      style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--color-surface-high)', background: 'var(--color-surface)', color: 'var(--color-on-surface)', fontSize: '14px' }}
+                      value={intent.goal}
+                      onChange={(e) => setIntents(intents.map(i => i.id === intent.id ? { ...i, goal: e.target.value } : i))}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-on-surface-variant)' }}>Tone</label>
+                    <select 
+                      style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--color-surface-high)', background: 'var(--color-surface)', color: 'var(--color-on-surface)', fontSize: '14px' }}
+                      value={intent.tone}
+                      onChange={(e) => setIntents(intents.map(i => i.id === intent.id ? { ...i, tone: e.target.value } : i))}
+                    >
+                      <option value="Friendly">Friendly</option>
+                      <option value="Empathetic">Empathetic</option>
+                      <option value="Persuasive">Persuasive</option>
+                      <option value="Professional">Professional</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeSection === 'rules' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '600' }}>Behavior Rules</h3>
+              <button 
+                className="btn-outline" 
+                onClick={() => setRules([...rules, { id: Date.now(), conditionType: 'User says', conditionValue: '', actionType: 'Schedule follow-up', actionConfig: '' }])}
+                style={{ fontSize: '13px', padding: '6px 12px' }}
+              >
+                + Add Rule
+              </button>
+            </div>
+            
+            {rules.map((rule, index) => (
+              <div key={rule.id} style={{ padding: '20px', border: '1px solid var(--color-surface-high)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface-highest)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600' }}>Rule #{index + 1}</h4>
+                  <button 
+                    onClick={() => setRules(rules.filter(r => r.id !== rule.id))}
+                    style={{ background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '13px' }}
+                  >
+                    Remove
+                  </button>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 2fr)', gap: '16px', alignItems: 'end' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-primary)' }}>IF</label>
+                    <select 
+                      style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--color-surface-high)', background: 'var(--color-surface)', color: 'var(--color-on-surface)', fontSize: '14px' }}
+                      value={rule.conditionType}
+                      onChange={(e) => setRules(rules.map(r => r.id === rule.id ? { ...r, conditionType: e.target.value } : r))}
+                    >
+                      <option value="User says">User says</option>
+                      <option value="Call duration >">Call duration &gt;</option>
+                      <option value="User sentiment is">User sentiment is</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. later, expensive, busy..."
+                      style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--color-surface-high)', background: 'var(--color-surface)', color: 'var(--color-on-surface)', fontSize: '14px' }}
+                      value={rule.conditionValue}
+                      onChange={(e) => setRules(rules.map(r => r.id === rule.id ? { ...r, conditionValue: e.target.value } : r))}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 2fr)', gap: '16px', alignItems: 'end' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-primary)' }}>THEN</label>
+                    <select 
+                      style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--color-surface-high)', background: 'var(--color-surface)', color: 'var(--color-on-surface)', fontSize: '14px' }}
+                      value={rule.actionType}
+                      onChange={(e) => setRules(rules.map(r => r.id === rule.id ? { ...r, actionType: e.target.value } : r))}
+                    >
+                      <option value="Schedule follow-up">Schedule follow-up</option>
+                      <option value="End call gracefully">End call gracefully</option>
+                      <option value="Transfer to human">Transfer to human</option>
+                      <option value="Send SMS">Send SMS</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. after 15 days"
+                      style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--color-surface-high)', background: 'var(--color-surface)', color: 'var(--color-on-surface)', fontSize: '14px' }}
+                      value={rule.actionConfig}
+                      onChange={(e) => setRules(rules.map(r => r.id === rule.id ? { ...r, actionConfig: e.target.value } : r))}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeSection === 'script' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600' }}>Script Control</h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-on-surface-variant)' }}>Generated Script (Read-only)</label>
+              <textarea 
+                readOnly
+                style={{ padding: '16px', borderRadius: '8px', border: '1px solid var(--color-surface-high)', background: 'var(--color-surface-highest)', color: 'var(--color-on-surface-variant)', minHeight: '100px', resize: 'vertical', fontSize: '14px', fontFamily: 'inherit', lineHeight: '1.6' }}
+                value={scriptControl.generatedScript}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-on-surface-variant)' }}>Editable Script</label>
+              <textarea 
+                style={{ padding: '16px', borderRadius: '8px', border: '1px solid var(--color-surface-high)', background: 'var(--color-surface)', color: 'var(--color-on-surface)', minHeight: '150px', resize: 'vertical', fontSize: '14px', fontFamily: 'inherit', lineHeight: '1.6' }}
+                value={scriptControl.editableScript}
+                onChange={(e) => setScriptControl({...scriptControl, editableScript: e.target.value})}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-on-surface-variant)' }}>Additional Instructions</label>
+              <textarea 
+                placeholder="e.g. Always confirm their email before ending."
+                style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--color-surface-high)', background: 'var(--color-surface)', color: 'var(--color-on-surface)', minHeight: '80px', resize: 'vertical', fontSize: '14px', fontFamily: 'inherit' }}
+                value={scriptControl.additionalInstructions}
+                onChange={(e) => setScriptControl({...scriptControl, additionalInstructions: e.target.value})}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+              <button className="btn-outline">Save Draft</button>
+              <button className="btn-primary">Approve Script</button>
+            </div>
+          </div>
+        )}
+
+        {activeSection === 'preview' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '600' }}>🧠 Final AI Prompt Preview</h3>
+              <button 
+                className="btn-outline" 
+                onClick={handleGeneratePreview}
+                style={{ display: 'flex', gap: '8px', alignItems: 'center' }}
+              >
+                <span>⚡</span> Generate Preview
+              </button>
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-on-surface-variant)' }}>AI Script Content</label>
+              <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-on-surface-variant)' }}>Compiled Prompt</label>
               <textarea 
+                readOnly
+                placeholder="Click 'Generate Preview' to compile the prompt..."
                 style={{ 
                   padding: '16px', 
                   borderRadius: '8px', 
                   border: '1px solid var(--color-surface-high)', 
-                  background: 'var(--color-surface)', 
-                  color: 'var(--color-on-surface)', 
-                  minHeight: '100px', 
+                  background: '#0d1117', 
+                  color: '#c9d1d9', 
+                  minHeight: '400px', 
                   resize: 'vertical', 
-                  fontSize: '14px', 
-                  fontFamily: 'inherit', 
-                  lineHeight: '1.6' 
+                  fontSize: '13px', 
+                  fontFamily: 'monospace', 
+                  lineHeight: '1.6',
+                  whiteSpace: 'pre-wrap'
                 }}
-                value={section.script}
-                onChange={(e) => handleScriptChange(index, e.target.value)}
+                value={previewPrompt}
               />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-on-surface-variant)' }}>Add custom instructions (Optional)</label>
-              <input 
-                type="text" 
-                placeholder="e.g. Keep this brief and upbeat"
-                style={{ 
-                  padding: '12px 16px', 
-                  borderRadius: '8px', 
-                  border: '1px solid var(--color-surface-high)', 
-                  background: 'var(--color-surface-highest)', 
-                  color: 'var(--color-on-surface)',
-                  fontSize: '14px'
-                }}
-                value={section.instruction}
-                onChange={(e) => handleInstructionChange(index, e.target.value)}
-              />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+              <button className="btn-primary" style={{ background: '#10b981', borderColor: '#10b981', color: '#ffffff' }}>Approve & Deploy</button>
             </div>
           </div>
-        ))}
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', marginTop: '16px', paddingTop: '24px', borderTop: '1px solid var(--color-surface-high)' }}>
-        <button className="btn-outline" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span>🔄</span> Regenerate
-        </button>
-        <button className="btn-outline" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span>🎧</span> Test audio script (Preview)
-        </button>
-        <button className="btn-primary">Save changes</button>
+        )}
       </div>
     </div>
   );
