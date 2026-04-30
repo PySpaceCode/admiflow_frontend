@@ -4,13 +4,17 @@
  * Handles wrapped { success, message, data } responses from FastAPI.
  */
 
-let BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://admitflow-rbzm.onrender.com/api';
-if (!BASE_URL.endsWith('/api')) {
-  if (BASE_URL.endsWith('/')) {
-    BASE_URL = BASE_URL.slice(0, -1);
-  }
-  BASE_URL = `${BASE_URL}/api`;
-}
+let BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://admitflow-rbzm.onrender.com';
+// Normalize: remove trailing / or /api so components can use full /api/... paths safely
+if (BASE_URL.endsWith('/')) BASE_URL = BASE_URL.slice(0, -1);
+if (BASE_URL.endsWith('/api')) BASE_URL = BASE_URL.slice(0, -4);
+if (BASE_URL.endsWith('/')) BASE_URL = BASE_URL.slice(0, -1);
+
+// We will now use full paths (like /api/register) in the components for clarity
+
+
+
+
 
 
 async function request(method, path, body = null, isFormData = false) {

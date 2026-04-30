@@ -37,14 +37,14 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      console.log("[Signup] Sending request to /auth/register", {
+      console.log("[Signup] Sending request to /api/register", {
         ...formData,
         password: "***",
       });
 
-      // POST /auth/register
+      // POST /api/register
       // Backend returns: { success: true/false, message: "...", data: { userId, email } }
-      const response = await api.post("/auth/register", {
+      const response = await api.post("/api/register", {
         fullName: formData.fullName.trim(),
         instituteName: formData.instituteName.trim(),
         email: formData.email.trim().toLowerCase(),
