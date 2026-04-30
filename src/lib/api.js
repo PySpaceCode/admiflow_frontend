@@ -4,8 +4,14 @@
  * Handles wrapped { success, message, data } responses from FastAPI.
  */
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'https://admitflow-rbzm.onrender.com/api';
+let BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://admitflow-rbzm.onrender.com/api';
+if (!BASE_URL.endsWith('/api')) {
+  if (BASE_URL.endsWith('/')) {
+    BASE_URL = BASE_URL.slice(0, -1);
+  }
+  BASE_URL = `${BASE_URL}/api`;
+}
+
 
 async function request(method, path, body = null, isFormData = false) {
   const options = {
@@ -47,12 +53,16 @@ async function request(method, path, body = null, isFormData = false) {
     // For error responses, extract the message and throw
     if (!res.ok) {
       // FastAPI 422 validation error
-      if (res.status === 422 && Array.isArray(data.detail)) {
-        const messages = data.detail.map((err) => {
-          const field = err.loc?.[err.loc.length - 1] || 'field';
-          return `${field}: ${err.msg}`;
-        });
-        throw new Error(messages.join(' · '));
+      if (res.status === 422) {
+        const details = data.details || data.detail;
+        if (Array.isArray(details)) {
+          const messages = details.map((err) => {
+            if (typeof err === 'string') return err;
+            const field = err.loc?.[err.loc.length - 1] || 'field';
+            return `${field}: ${err.msg}`;
+          });
+          throw new Error(messages.join(' · '));
+        }
       }
 
       // Wrapped error: { success: false, message: "...", data: null }
@@ -81,9 +91,9 @@ async function request(method, path, body = null, isFormData = false) {
 }
 
 export const api = {
-  get:    (path)                   => request('GET',    path),
-  post:   (path, body, isFormData) => request('POST',   path, body, isFormData),
-  put:    (path, body)             => request('PUT',    path, body),
-  patch:  (path, body)             => request('PATCH',  path, body),
-  delete: (path)                   => request('DELETE', path),
+  get: (path) => request('GET', path),
+  post: (path, body, isFormData) => request('POST', path, body, isFormData),
+  put: (path, body) => request('PUT', path, body),
+  patch: (path, body) => request('PATCH', path, body),
+  delete: (path) => request('DELETE', path),
 };
