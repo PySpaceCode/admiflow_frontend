@@ -1,12 +1,11 @@
 /**
- * API Helper — AdmitFlow / InterviewAI
- * All fetch calls go through here.
- * Backend: https://productionai1.onrender.com
- * Routes are at root level (e.g. /register, /login, /me)
+ * API Helper — AdmitFlow
+ * Backend: https://admitflow-rbzm.onrender.com/api
+ * Handles wrapped { success, message, data } responses from FastAPI.
  */
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'https://productionai1.onrender.com';
+  process.env.NEXT_PUBLIC_API_URL || 'https://admitflow-rbzm.onrender.com/api';
 
 async function request(method, path, body = null, isFormData = false) {
   const options = {
@@ -25,16 +24,15 @@ async function request(method, path, body = null, isFormData = false) {
     options.headers['Content-Type'] = 'application/json';
     if (body) options.body = JSON.stringify(body);
   } else {
-    // Browser sets Content-Type + boundary automatically for FormData
     if (body) options.body = body;
   }
 
   try {
     console.log(`[API] ${method} ${BASE_URL}${path}`, body);
     const res = await fetch(`${BASE_URL}${path}`, options);
-    console.log(`[API] Response ${res.status}`, res.ok);
+    console.log(`[API] Response status: ${res.status}`);
 
-    // Parse body (may be empty on some endpoints)
+    // Parse the response body always
     let data;
     const text = await res.text();
     try {
@@ -43,8 +41,12 @@ async function request(method, path, body = null, isFormData = false) {
       data = { detail: text };
     }
 
+    console.log(`[API] Response body:`, data);
+
+    // This backend always wraps: { success, message, data }
+    // For error responses, extract the message and throw
     if (!res.ok) {
-      // FastAPI 422 → detail is an array of field errors
+      // FastAPI 422 validation error
       if (res.status === 422 && Array.isArray(data.detail)) {
         const messages = data.detail.map((err) => {
           const field = err.loc?.[err.loc.length - 1] || 'field';
@@ -53,13 +55,16 @@ async function request(method, path, body = null, isFormData = false) {
         throw new Error(messages.join(' · '));
       }
 
+      // Wrapped error: { success: false, message: "...", data: null }
       const errorMsg =
-        typeof data.detail === 'string'
-          ? data.detail
-          : data.message || res.statusText;
+        data.message ||
+        (typeof data.detail === 'string' ? data.detail : null) ||
+        res.statusText ||
+        'Request failed';
       throw new Error(errorMsg);
     }
 
+    // Return the full parsed body (caller handles success/data)
     return data;
   } catch (error) {
     if (
@@ -67,7 +72,7 @@ async function request(method, path, body = null, isFormData = false) {
       error.message.toLowerCase().includes('failed to fetch')
     ) {
       throw new Error(
-        `Cannot reach server. Make sure the backend is running at ${BASE_URL}`
+        'Cannot reach server. The backend may be starting up — please try again in a moment.'
       );
     }
     console.error(`[API] [${method} ${path}]:`, error.message);

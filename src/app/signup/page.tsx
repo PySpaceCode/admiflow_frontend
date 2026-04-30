@@ -14,14 +14,11 @@ export default function SignupPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [formData, setFormData] = useState({
-    username: "",
-    name: "",
+    fullName: "",
+    instituteName: "",
     email: "",
-    phone: "",
     password: "",
-    confirm_password: "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,11 +29,6 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Client-side validation
-    if (formData.password !== formData.confirm_password) {
-      showToast("Passwords do not match", "error");
-      return;
-    }
     if (formData.password.length < 6) {
       showToast("Password must be at least 6 characters", "error");
       return;
@@ -45,28 +37,36 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      console.log("Submitting signup:", { ...formData, password: "***" });
-
-      // POST /register  → 201 UserResponse on success
-      const response = await api.post("/register", {
-        username: formData.username.trim(),
-        name: formData.name.trim(),
-        email: formData.email.trim(),
-        phone: formData.phone.trim(),
-        password: formData.password,
-        confirm_password: formData.confirm_password,
+      console.log("[Signup] Sending request to /auth/register", {
+        ...formData,
+        password: "***",
       });
 
-      console.log("Signup Response:", response);
+      // POST /auth/register
+      // Backend returns: { success: true/false, message: "...", data: { userId, email } }
+      const response = await api.post("/auth/register", {
+        fullName: formData.fullName.trim(),
+        instituteName: formData.instituteName.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+      });
 
-      // The API returns the created UserResponse directly on 201
-      showToast("Account created successfully! Please log in.", "success");
-      setTimeout(() => {
-        router.push("/login");
-      }, 1500);
+      console.log("[Signup] Response:", response);
+
+      if (response.success) {
+        showToast(response.message || "Account created successfully!", "success");
+        setTimeout(() => {
+          router.push("/login");
+        }, 1500);
+      } else {
+        showToast(response.message || "Failed to create account", "error");
+      }
     } catch (error: any) {
-      console.error("Signup error:", error);
-      showToast(error.message || "Failed to create account. Please try again.", "error");
+      console.error("[Signup] Error:", error);
+      showToast(
+        error.message || "An unexpected error occurred. Please try again.",
+        "error"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -81,7 +81,10 @@ export default function SignupPage() {
 
       {/* Back to home */}
       <div className="absolute top-6 left-6 z-50 lg:hidden">
-        <Link href="/" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+        <Link
+          href="/"
+          className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Link>
@@ -101,7 +104,6 @@ export default function SignupPage() {
             transition={{ duration: 0.8, type: "spring" }}
             className="relative"
           >
-            {/* Pulsing rings behind mascot */}
             <motion.div
               animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }}
               transition={{ repeat: Infinity, duration: 4, ease: "easeInOut", delay: 0.5 }}
@@ -162,7 +164,7 @@ export default function SignupPage() {
 
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold tracking-tight mb-2">Create Account</h2>
-            <p className="text-sm text-muted-foreground">Set up your account in seconds</p>
+            <p className="text-sm text-muted-foreground">Set up your institution in seconds</p>
           </div>
 
           <div className="bg-card/80 backdrop-blur-xl p-8 rounded-3xl border border-border/60 shadow-2xl relative overflow-hidden">
@@ -170,28 +172,15 @@ export default function SignupPage() {
 
             <form onSubmit={handleSignup} className="space-y-4">
 
-              {/* Username */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80 pl-1 block">Username</label>
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  placeholder="johndoe"
-                  autoComplete="username"
-                  className="w-full px-4 py-3 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
-                  required
-                />
-              </div>
-
               {/* Full Name */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80 pl-1 block">Full Name</label>
+                <label className="text-sm font-medium text-foreground/80 pl-1 block">
+                  Full Name
+                </label>
                 <input
                   type="text"
-                  name="name"
-                  value={formData.name}
+                  name="fullName"
+                  value={formData.fullName}
                   onChange={handleInputChange}
                   placeholder="Jane Doe"
                   autoComplete="name"
@@ -200,31 +189,35 @@ export default function SignupPage() {
                 />
               </div>
 
-              {/* Email */}
+              {/* Institute Name */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80 pl-1 block">Email</label>
+                <label className="text-sm font-medium text-foreground/80 pl-1 block">
+                  Institute Name
+                </label>
                 <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
+                  type="text"
+                  name="instituteName"
+                  value={formData.instituteName}
                   onChange={handleInputChange}
-                  placeholder="name@example.com"
-                  autoComplete="email"
+                  placeholder="E.g. Harvard University"
+                  autoComplete="organization"
                   className="w-full px-4 py-3 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
                   required
                 />
               </div>
 
-              {/* Phone */}
+              {/* Email */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80 pl-1 block">Phone Number</label>
+                <label className="text-sm font-medium text-foreground/80 pl-1 block">
+                  Email
+                </label>
                 <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
+                  type="email"
+                  name="email"
+                  value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="+1 234 567 8900"
-                  autoComplete="tel"
+                  placeholder="name@institute.edu"
+                  autoComplete="email"
                   className="w-full px-4 py-3 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
                   required
                 />
@@ -232,7 +225,9 @@ export default function SignupPage() {
 
               {/* Password */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80 pl-1 block">Password</label>
+                <label className="text-sm font-medium text-foreground/80 pl-1 block">
+                  Password
+                </label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -241,9 +236,9 @@ export default function SignupPage() {
                     onChange={handleInputChange}
                     placeholder="••••••••"
                     autoComplete="new-password"
+                    minLength={6}
                     className="w-full px-4 py-3 pr-12 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
                     required
-                    minLength={6}
                   />
                   <button
                     type="button"
@@ -251,38 +246,13 @@ export default function SignupPage() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     tabIndex={-1}
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
                   </button>
                 </div>
-              </div>
-
-              {/* Confirm Password */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80 pl-1 block">Confirm Password</label>
-                <div className="relative">
-                  <input
-                    type={showConfirm ? "text" : "password"}
-                    name="confirm_password"
-                    value={formData.confirm_password}
-                    onChange={handleInputChange}
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                    className="w-full px-4 py-3 pr-12 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    tabIndex={-1}
-                  >
-                    {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                {/* Live mismatch hint */}
-                {formData.confirm_password && formData.password !== formData.confirm_password && (
-                  <p className="text-xs text-red-500 pl-1 mt-1">Passwords do not match</p>
-                )}
               </div>
 
               <button
@@ -304,7 +274,10 @@ export default function SignupPage() {
             <div className="mt-8 pt-6 border-t border-border/60 text-center">
               <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}
-                <Link href="/login" className="text-[var(--color-brand-blue)] hover:text-[var(--color-brand-cyan)] font-semibold transition-colors">
+                <Link
+                  href="/login"
+                  className="text-[var(--color-brand-blue)] hover:text-[var(--color-brand-cyan)] font-semibold transition-colors"
+                >
                   Sign In
                 </Link>
               </p>
@@ -314,8 +287,13 @@ export default function SignupPage() {
           <div className="mt-6 text-center px-4">
             <p className="text-xs text-muted-foreground/80">
               By creating an account, you agree to the{" "}
-              <Link href="#" className="underline hover:text-foreground">Terms of Service</Link> and{" "}
-              <Link href="#" className="underline hover:text-foreground">Privacy Policy</Link>
+              <Link href="#" className="underline hover:text-foreground">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="#" className="underline hover:text-foreground">
+                Privacy Policy
+              </Link>
             </p>
           </div>
         </motion.div>

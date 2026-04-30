@@ -14,7 +14,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    username: "",
+    email: "",
     password: "",
   });
 
@@ -28,20 +28,26 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // POST /login → { access_token, token_type }
-      const response = await api.post("/login", {
-        username: formData.username.trim(),
+      // POST /auth/login → { success, message, data: { access_token, refresh_token, user } }
+      const response = await api.post("/auth/login", {
+        email: formData.email.trim().toLowerCase(),
         password: formData.password,
       });
 
       console.log("Login Response:", response);
 
-      if (response.access_token) {
-        localStorage.setItem("token", response.access_token);
+      if (response.success) {
+        localStorage.setItem("token", response.data.access_token);
+        if (response.data.refresh_token) {
+          localStorage.setItem("refresh_token", response.data.refresh_token);
+        }
+        if (response.data.user) {
+          localStorage.setItem("user", JSON.stringify(response.data.user));
+        }
         showToast("Login successful!", "success");
         router.push("/dashboard");
       } else {
-        showToast("Invalid credentials", "error");
+        showToast(response.message || "Invalid credentials", "error");
       }
     } catch (error: any) {
       showToast(error.message || "An unexpected error occurred", "error");
@@ -97,14 +103,14 @@ export default function LoginPage() {
             
             <form onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80 pl-1 block">Username</label>
+                <label className="text-sm font-medium text-foreground/80 pl-1 block">Email</label>
                 <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
+                  type="email"
+                  name="email"
+                  value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="Your username"
-                  autoComplete="username"
+                  placeholder="name@institute.edu"
+                  autoComplete="email"
                   className="w-full px-4 py-3 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
                   required
                 />
