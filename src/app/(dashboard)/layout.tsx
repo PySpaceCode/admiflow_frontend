@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import ToastContainer from '@/components/dashboard/ToastContainer';
 import { showToast } from '@/lib/toast';
+import { api } from '@/lib/api';
 
 import './dashboard.css';
 
@@ -49,10 +50,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   async function handleLogout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    showToast('Logged out successfully', 'success');
-    router.push('/login'); // Assuming the auth route in Next.js is /login
+    try {
+      // Optional: notify backend about logout
+      await api.post('/api/logout');
+    } catch (error) {
+      console.warn('Logout API call failed:', error);
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      showToast('Logged out successfully', 'success');
+      router.push('/login');
+    }
   }
 
   const navGroups = [
