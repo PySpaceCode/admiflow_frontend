@@ -1,10 +1,12 @@
 /**
- * API Helper — Admission AI
+ * API Helper — AdmitFlow / InterviewAI
  * All fetch calls go through here.
- * Handles FastAPI 422 validation errors, network errors, and JWT headers.
+ * Backend: https://productionai1.onrender.com
+ * Routes are at root level (e.g. /register, /login, /me)
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'https://productionai1.onrender.com';
 
 async function request(method, path, body = null, isFormData = false) {
   const options = {
@@ -13,7 +15,8 @@ async function request(method, path, body = null, isFormData = false) {
   };
 
   // Attach JWT token if present
-  const token = localStorage.getItem('token');
+  const token =
+    typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (token) {
     options.headers['Authorization'] = `Bearer ${token}`;
   }
@@ -27,19 +30,23 @@ async function request(method, path, body = null, isFormData = false) {
   }
 
   try {
+    console.log(`[API] ${method} ${BASE_URL}${path}`, body);
     const res = await fetch(`${BASE_URL}${path}`, options);
+    console.log(`[API] Response ${res.status}`, res.ok);
+
+    // Parse body (may be empty on some endpoints)
+    let data;
+    const text = await res.text();
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = { detail: text };
+    }
 
     if (!res.ok) {
-      let errorData;
-      try {
-        errorData = await res.json();
-      } catch {
-        errorData = { detail: res.statusText };
-      }
-
       // FastAPI 422 → detail is an array of field errors
-      if (res.status === 422 && Array.isArray(errorData.detail)) {
-        const messages = errorData.detail.map(err => {
+      if (res.status === 422 && Array.isArray(data.detail)) {
+        const messages = data.detail.map((err) => {
           const field = err.loc?.[err.loc.length - 1] || 'field';
           return `${field}: ${err.msg}`;
         });
@@ -47,20 +54,23 @@ async function request(method, path, body = null, isFormData = false) {
       }
 
       const errorMsg =
-        typeof errorData.detail === 'string'
-          ? errorData.detail
-          : errorData.message || res.statusText;
+        typeof data.detail === 'string'
+          ? data.detail
+          : data.message || res.statusText;
       throw new Error(errorMsg);
     }
 
-    return res.json();
+    return data;
   } catch (error) {
-    if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+    if (
+      error.name === 'TypeError' &&
+      error.message.toLowerCase().includes('failed to fetch')
+    ) {
       throw new Error(
-        `Cannot reach server. Make sure FastAPI is running on ${BASE_URL}`
+        `Cannot reach server. Make sure the backend is running at ${BASE_URL}`
       );
     }
-    console.error(`API [${method} ${path}]:`, error.message);
+    console.error(`[API] [${method} ${path}]:`, error.message);
     throw error;
   }
 }
@@ -69,5 +79,6 @@ export const api = {
   get:    (path)                   => request('GET',    path),
   post:   (path, body, isFormData) => request('POST',   path, body, isFormData),
   put:    (path, body)             => request('PUT',    path, body),
+  patch:  (path, body)             => request('PATCH',  path, body),
   delete: (path)                   => request('DELETE', path),
 };

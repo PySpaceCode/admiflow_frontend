@@ -3,20 +3,73 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, ArrowRight, ArrowLeft } from "lucide-react";
+import { Sparkles, ArrowRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { ThemeToggle } from "@/components/ThemeToggle"; 
+import { useRouter } from "next/navigation";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { api } from "@/lib/api";
+import { showToast } from "@/lib/toast";
 
 export default function SignupPage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [formData, setFormData] = useState({
+    username: "",
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirm_password: "",
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Client-side validation
+    if (formData.password !== formData.confirm_password) {
+      showToast("Passwords do not match", "error");
+      return;
+    }
+    if (formData.password.length < 6) {
+      showToast("Password must be at least 6 characters", "error");
+      return;
+    }
+
     setIsLoading(true);
-    // Simulate signup request
-    setTimeout(() => {
+
+    try {
+      console.log("Submitting signup:", { ...formData, password: "***" });
+
+      // POST /register  → 201 UserResponse on success
+      const response = await api.post("/register", {
+        username: formData.username.trim(),
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        password: formData.password,
+        confirm_password: formData.confirm_password,
+      });
+
+      console.log("Signup Response:", response);
+
+      // The API returns the created UserResponse directly on 201
+      showToast("Account created successfully! Please log in.", "success");
+      setTimeout(() => {
+        router.push("/login");
+      }, 1500);
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      showToast(error.message || "Failed to create account. Please try again.", "error");
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -40,22 +93,21 @@ export default function SignupPage() {
           <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-[var(--color-brand-blue)]/10 to-[var(--color-brand-cyan)]/10 blur-[130px]" />
           <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[var(--color-brand-purple)]/10 blur-[100px]" />
         </div>
-        
+
         <div className="z-10 flex flex-col items-center justify-center max-w-lg text-center">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, type: "spring" }}
             className="relative"
           >
             {/* Pulsing rings behind mascot */}
-            <motion.div 
+            <motion.div
               animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }}
               transition={{ repeat: Infinity, duration: 4, ease: "easeInOut", delay: 0.5 }}
               className="absolute inset-0 rounded-full bg-gradient-to-tl from-[var(--color-brand-purple)] to-[var(--color-brand-cyan)] blur-2xl -z-20 opacity-30 dark:opacity-40"
             />
-
-            <motion.div 
+            <motion.div
               animate={{ y: [0, -12, 0] }}
               transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 0.2 }}
               className="relative w-80 h-80 mb-10 rounded-full p-2 bg-gradient-to-b from-[var(--color-brand-cyan)]/30 to-transparent shadow-[0_0_80px_rgba(47,107,255,0.15)] border border-[var(--color-brand-cyan)]/40 backdrop-blur-xl overflow-hidden flex items-center justify-center"
@@ -90,10 +142,9 @@ export default function SignupPage() {
 
       {/* Right Section - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background lg:bg-card/30 relative overflow-hidden">
-        {/* Subtle light/dark background element for form side */}
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[var(--color-brand-blue)]/5 blur-[120px] pointer-events-none" />
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
@@ -111,64 +162,139 @@ export default function SignupPage() {
 
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold tracking-tight mb-2">Create Account</h2>
-            <p className="text-sm text-muted-foreground">Set up your institution in seconds</p>
+            <p className="text-sm text-muted-foreground">Set up your account in seconds</p>
           </div>
 
           <div className="bg-card/80 backdrop-blur-xl p-8 rounded-3xl border border-border/60 shadow-2xl relative overflow-hidden">
-             {/* Subtle inner card glow */}
-             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[var(--color-brand-cyan)]/10 to-transparent -z-10" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[var(--color-brand-cyan)]/10 to-transparent -z-10" />
 
             <form onSubmit={handleSignup} className="space-y-4">
+
+              {/* Username */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground/80 pl-1 block">Username</label>
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  placeholder="johndoe"
+                  autoComplete="username"
+                  className="w-full px-4 py-3 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
+                  required
+                />
+              </div>
+
+              {/* Full Name */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground/80 pl-1 block">Full Name</label>
                 <input
                   type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
                   placeholder="Jane Doe"
+                  autoComplete="name"
                   className="w-full px-4 py-3 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
                   required
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80 pl-1 block">Institute Name</label>
-                <input
-                  type="text"
-                  placeholder="E.g. Harvard University"
-                  className="w-full px-4 py-3 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
-                  required
-                />
-              </div>
-
+              {/* Email */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground/80 pl-1 block">Email</label>
                 <input
                   type="email"
-                  placeholder="name@institute.edu"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="name@example.com"
+                  autoComplete="email"
                   className="w-full px-4 py-3 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
                   required
                 />
               </div>
 
+              {/* Phone */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80 pl-1 block">Password</label>
+                <label className="text-sm font-medium text-foreground/80 pl-1 block">Phone Number</label>
                 <input
-                  type="password"
-                  placeholder="••••••••"
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder="+1 234 567 8900"
+                  autoComplete="tel"
                   className="w-full px-4 py-3 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
                   required
                 />
+              </div>
+
+              {/* Password */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground/80 pl-1 block">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    className="w-full px-4 py-3 pr-12 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground/80 pl-1 block">Confirm Password</label>
+                <div className="relative">
+                  <input
+                    type={showConfirm ? "text" : "password"}
+                    name="confirm_password"
+                    value={formData.confirm_password}
+                    onChange={handleInputChange}
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    className="w-full px-4 py-3 pr-12 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                {/* Live mismatch hint */}
+                {formData.confirm_password && formData.password !== formData.confirm_password && (
+                  <p className="text-xs text-red-500 pl-1 mt-1">Passwords do not match</p>
+                )}
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full mt-8 py-3.5 px-4 bg-gradient-to-r from-[var(--color-brand-purple)] via-[var(--color-brand-blue)] to-[var(--color-brand-cyan)] hover:opacity-90 text-white font-semibold rounded-xl transition-all shadow-[0_4px_20px_rgba(47,107,255,0.25)] hover:shadow-[0_8px_30px_rgba(47,107,255,0.4)] flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed group"
+                className="w-full mt-6 py-3.5 px-4 bg-gradient-to-r from-[var(--color-brand-purple)] via-[var(--color-brand-blue)] to-[var(--color-brand-cyan)] hover:opacity-90 text-white font-semibold rounded-xl transition-all shadow-[0_4px_20px_rgba(47,107,255,0.25)] hover:shadow-[0_8px_30px_rgba(47,107,255,0.4)] flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed group"
               >
                 {isLoading ? (
                   <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>
-                    Continue
+                    Create Account
                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                   </>
                 )}
@@ -184,12 +310,12 @@ export default function SignupPage() {
               </p>
             </div>
           </div>
-          
+
           <div className="mt-6 text-center px-4">
             <p className="text-xs text-muted-foreground/80">
               By creating an account, you agree to the{" "}
               <Link href="#" className="underline hover:text-foreground">Terms of Service</Link> and{" "}
-               <Link href="#" className="underline hover:text-foreground">Privacy Policy</Link>
+              <Link href="#" className="underline hover:text-foreground">Privacy Policy</Link>
             </p>
           </div>
         </motion.div>

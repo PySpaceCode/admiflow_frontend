@@ -6,20 +6,48 @@ import Image from "next/image";
 import { Sparkles, ArrowRight, ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ThemeToggle } from "@/components/ThemeToggle"; // Using absolute path alias
+import { ThemeToggle } from "@/components/ThemeToggle"; 
+import { api } from "@/lib/api";
+import { showToast } from "@/lib/toast";
 
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate login request
-    setTimeout(() => {
+
+    try {
+      // POST /login → { access_token, token_type }
+      const response = await api.post("/login", {
+        username: formData.username.trim(),
+        password: formData.password,
+      });
+
+      console.log("Login Response:", response);
+
+      if (response.access_token) {
+        localStorage.setItem("token", response.access_token);
+        showToast("Login successful!", "success");
+        router.push("/dashboard");
+      } else {
+        showToast("Invalid credentials", "error");
+      }
+    } catch (error: any) {
+      showToast(error.message || "An unexpected error occurred", "error");
+    } finally {
       setIsLoading(false);
-      router.push("/dashboard");
-    }, 1500);
+    }
   };
 
   return (
@@ -69,10 +97,14 @@ export default function LoginPage() {
             
             <form onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80 pl-1 block">Email</label>
+                <label className="text-sm font-medium text-foreground/80 pl-1 block">Username</label>
                 <input
-                  type="email"
-                  placeholder="Your email address"
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  placeholder="Your username"
+                  autoComplete="username"
                   className="w-full px-4 py-3 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
                   required
                 />
@@ -87,6 +119,9 @@ export default function LoginPage() {
                 </div>
                 <input
                   type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
                   placeholder="••••••••"
                   className="w-full px-4 py-3 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
                   required
