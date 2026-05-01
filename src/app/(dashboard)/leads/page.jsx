@@ -122,6 +122,9 @@ export default function Leads() {
       const response = await api.post('/api/leads/calling-config', payload);
       if (response.success) {
         showToast('Agent configuration saved and launched!', 'success');
+        setTimeout(() => {
+          router.push('/knowledge-base');
+        }, 1500);
       }
     } catch (err) {
       showToast(err.message || 'Failed to save configuration', 'error');
