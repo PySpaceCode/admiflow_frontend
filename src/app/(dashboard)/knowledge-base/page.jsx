@@ -162,15 +162,16 @@ function UploadDocuments() {
         display: 'grid', 
         gridTemplateColumns: '1fr 350px', 
         gap: '32px',
-        alignItems: 'start'
+        alignItems: 'start',
+        maxWidth: '1400px'
       }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', minWidth: 0 }}>
           {/* Course Details */}
-          <div className="card" style={{ padding: '20px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '18px' }}>📘</span> Course Overview
+          <div className="card" style={{ padding: '24px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '20px' }}>📘</span> Course Overview
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
               {[
                 { label: 'Course Name', value: reportData.courses?.[0]?.course_name },
                 { label: 'Course Code', value: reportData.courses?.[0]?.course_code },
@@ -179,62 +180,74 @@ function UploadDocuments() {
                 { label: 'Coordinator', value: reportData.courses?.[0]?.coordinator },
                 { label: 'Partner', value: reportData.courses?.[0]?.partner_institute }
               ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span className="text-muted" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</span>
-                  <span style={{ fontWeight: '600', fontSize: '14px' }}>{item.value || 'N/A'}</span>
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span className="text-muted" style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.05em' }}>{item.label}</span>
+                  <span style={{ fontWeight: '600', fontSize: '14px', color: item.value ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)', opacity: item.value ? 1 : 0.6 }}>{item.value || 'Not specified'}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Modules Section */}
-          <div className="card" style={{ padding: '20px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '18px' }}>📋</span> Curriculum & Modules
-            </h3>
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', 
-              gap: '16px' 
-            }}>
-              {reportData.modules?.map((mod, i) => (
-                <div key={i} style={{ 
-                  padding: '16px', 
-                  background: 'var(--color-surface-low)', 
-                  borderRadius: '12px', 
-                  border: '1px solid var(--color-surface-high)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <div style={{ fontSize: '10px', color: 'var(--color-primary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Module {mod.module_number || i+1}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--color-on-surface-variant)' }}>{mod.topics?.length || 0} Topics</div>
-                  </div>
-                  <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--color-on-surface)' }}>{mod.module_title}</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {mod.topics?.map((topic, j) => (
-                      <span key={j} style={{ 
-                        fontSize: '10px', 
-                        padding: '3px 10px', 
-                        background: 'var(--color-surface)', 
-                        borderRadius: '6px', 
-                        border: '1px solid var(--color-surface-high)',
-                        color: 'var(--color-on-surface-variant)',
-                        fontWeight: '500'
-                      }}>{topic}</span>
-                    ))}
-                  </div>
-                </div>
-              ))}
+          <div className="card" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <span style={{ fontSize: '20px' }}>📋</span> Curriculum & Modules
+              </h3>
+              <span style={{ fontSize: '12px', padding: '4px 12px', background: 'var(--color-surface-highest)', borderRadius: '20px', fontWeight: '600' }}>
+                {reportData.modules?.length || 0} Modules Found
+              </span>
             </div>
+            
+            {reportData.modules && reportData.modules.length > 0 ? (
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+                gap: '20px' 
+              }}>
+                {reportData.modules.map((mod, i) => (
+                  <div key={i} style={{ 
+                    padding: '20px', 
+                    background: 'var(--color-surface)', 
+                    borderRadius: '12px', 
+                    border: '1px solid var(--color-surface-high)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: '800', textTransform: 'uppercase' }}>Module {mod.module_number || i+1}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-on-surface-variant)', opacity: 0.7 }}>{mod.topics?.length || 0} Topics</div>
+                    </div>
+                    <div style={{ fontSize: '15px', fontWeight: '700', lineHeight: '1.4' }}>{mod.module_title || 'Untitled Module'}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {mod.topics?.map((topic, j) => (
+                        <span key={j} style={{ 
+                          fontSize: '11px', 
+                          padding: '4px 10px', 
+                          background: 'var(--color-surface-highest)', 
+                          borderRadius: '6px', 
+                          color: 'var(--color-on-surface-variant)',
+                          border: '1px solid var(--color-surface-high)'
+                        }}>{topic}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px', background: 'var(--color-surface-low)', borderRadius: '12px', border: '1px dashed var(--color-surface-high)' }}>
+                <p className="text-muted">No modules detected in the document. Please ensure the syllabus is clear.</p>
+              </div>
+            )}
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', position: 'sticky', top: '24px' }}>
           {/* Contact Information */}
-          <div className="card" style={{ padding: '20px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '16px' }}>📞 Contact Details</h3>
+          <div className="card" style={{ padding: '24px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '20px' }}>📞 Contact Info</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {[
                 { icon: '📧', label: 'Email', value: reportData.contact?.email },
@@ -242,11 +255,11 @@ function UploadDocuments() {
                 { icon: '🌐', label: 'Website', value: reportData.contact?.website },
                 { icon: '📍', label: 'Branches', value: reportData.contact?.branches?.join(' • ') }
               ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--color-surface-high)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>{item.icon}</div>
+                <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--color-surface-highest)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{item.icon}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '10px', color: 'var(--color-on-surface-variant)', textTransform: 'uppercase' }}>{item.label}</div>
-                    <div style={{ fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.value || 'N/A'}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--color-on-surface-variant)', textTransform: 'uppercase', fontWeight: '600' }}>{item.label}</div>
+                    <div style={{ fontSize: '14px', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.value || 'Not found'}</div>
                   </div>
                 </div>
               ))}
