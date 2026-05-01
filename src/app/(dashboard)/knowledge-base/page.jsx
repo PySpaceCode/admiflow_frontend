@@ -36,14 +36,10 @@ function UploadDocuments() {
       if (response.success) {
         showToast('Document processed successfully', 'success');
         
-        // Format the AI report for the textarea
+        // Format the AI report for the textarea (Pretty JSON)
         try {
           const report = JSON.parse(response.data.aiReport);
-          let formattedReport = `• Courses: ${report.courses.join(', ')}\n`;
-          formattedReport += `• Pricing: ${JSON.stringify(report.pricing_details, null, 2)}\n`;
-          formattedReport += `• FAQs: ${report.faqs.map(f => `\n  Q: ${f.question}\n  A: ${f.answer}`).join('\n')}\n`;
-          formattedReport += `• Other: ${report.other_details}`;
-          setReportText(formattedReport);
+          setReportText(JSON.stringify(report, null, 2));
         } catch (e) {
           setReportText(response.data.aiReport);
         }
