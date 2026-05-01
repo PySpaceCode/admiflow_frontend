@@ -145,25 +145,32 @@ function UploadDocuments() {
       {/* Quick Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
         {[
-          { label: 'Course Fee', value: reportData.courses?.[0]?.fee ? `₹${reportData.courses[0].fee}` : 'N/A', icon: '💰' },
-          { label: 'Duration', value: reportData.courses?.[0]?.duration || 'N/A', icon: '⏱️' },
-          { label: 'Total Hours', value: reportData.courses?.[0]?.total_hours || 'N/A', icon: '📚' },
-          { label: 'Mode', value: reportData.courses?.[0]?.mode || 'N/A', icon: '💻' }
+          { label: 'Course Fee', value: reportData.courses?.[0]?.fee ? `₹${reportData.courses[0].fee}` : null, icon: '💰' },
+          { label: 'Duration', value: reportData.courses?.[0]?.duration || null, icon: '⏱️' },
+          { label: 'Total Hours', value: reportData.courses?.[0]?.total_hours || null, icon: '📚' },
+          { label: 'Mode', value: reportData.courses?.[0]?.mode || null, icon: '💻' }
         ].map((stat, i) => (
-          <div key={i} className="card" style={{ padding: '20px', textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', marginBottom: '8px' }}>{stat.icon}</div>
-            <div className="text-muted" style={{ fontSize: '12px', marginBottom: '4px' }}>{stat.label}</div>
-            <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--color-primary)' }}>{stat.value}</div>
+          <div key={i} className="card" style={{ 
+            padding: '24px', 
+            textAlign: 'center',
+            display: stat.value ? 'block' : 'none',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-surface-high)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+          }}>
+            <div style={{ fontSize: '28px', marginBottom: '12px' }}>{stat.icon}</div>
+            <div className="text-muted" style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>{stat.label}</div>
+            <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--color-primary)' }}>{stat.value}</div>
           </div>
         ))}
       </div>
 
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: '1fr 350px', 
+        gridTemplateColumns: 'minmax(0, 1fr) 380px', 
         gap: '32px',
         alignItems: 'start',
-        maxWidth: '1400px'
+        width: '100%'
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', minWidth: 0 }}>
           {/* Course Details */}
@@ -202,34 +209,53 @@ function UploadDocuments() {
             {reportData.modules && reportData.modules.length > 0 ? (
               <div style={{ 
                 display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-                gap: '20px' 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
+                gap: '24px' 
               }}>
                 {reportData.modules.map((mod, i) => (
                   <div key={i} style={{ 
-                    padding: '20px', 
-                    background: 'var(--color-surface)', 
-                    borderRadius: '12px', 
+                    padding: '24px', 
+                    background: 'var(--color-surface-low)', 
+                    borderRadius: '16px', 
                     border: '1px solid var(--color-surface-high)',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '12px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                  }}>
+                    gap: '16px',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    cursor: 'default'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.06)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                  >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: '800', textTransform: 'uppercase' }}>Module {mod.module_number || i+1}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--color-on-surface-variant)', opacity: 0.7 }}>{mod.topics?.length || 0} Topics</div>
+                      <div style={{ 
+                        fontSize: '10px', 
+                        padding: '4px 10px', 
+                        background: 'var(--color-primary-container)', 
+                        color: 'var(--color-primary)', 
+                        borderRadius: '20px',
+                        fontWeight: '800', 
+                        textTransform: 'uppercase' 
+                      }}>Module {mod.module_number || i+1}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-on-surface-variant)', fontWeight: '600' }}>{mod.topics?.length || 0} Topics</div>
                     </div>
-                    <div style={{ fontSize: '15px', fontWeight: '700', lineHeight: '1.4' }}>{mod.module_title || 'Untitled Module'}</div>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--color-on-surface)', lineHeight: '1.4' }}>{mod.module_title || 'Untitled Module'}</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                       {mod.topics?.map((topic, j) => (
                         <span key={j} style={{ 
                           fontSize: '11px', 
-                          padding: '4px 10px', 
-                          background: 'var(--color-surface-highest)', 
-                          borderRadius: '6px', 
+                          padding: '6px 12px', 
+                          background: 'var(--color-surface)', 
+                          borderRadius: '8px', 
                           color: 'var(--color-on-surface-variant)',
-                          border: '1px solid var(--color-surface-high)'
+                          border: '1px solid var(--color-surface-high)',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
                         }}>{topic}</span>
                       ))}
                     </div>
@@ -237,8 +263,10 @@ function UploadDocuments() {
                 ))}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '40px', background: 'var(--color-surface-low)', borderRadius: '12px', border: '1px dashed var(--color-surface-high)' }}>
-                <p className="text-muted">No modules detected in the document. Please ensure the syllabus is clear.</p>
+              <div style={{ textAlign: 'center', padding: '60px 40px', background: 'var(--color-surface-low)', borderRadius: '20px', border: '2px dashed var(--color-surface-high)' }}>
+                <div style={{ fontSize: '40px', marginBottom: '16px' }}>📭</div>
+                <h4 style={{ marginBottom: '8px' }}>No Modules Detected</h4>
+                <p className="text-muted" style={{ fontSize: '14px' }}>Please ensure the syllabus section is clear in the document.</p>
               </div>
             )}
           </div>
