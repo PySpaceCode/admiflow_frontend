@@ -107,6 +107,16 @@ export default function Leads() {
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+  // Helper to format 24h time to 12h with AM/PM
+  const format12h = (time) => {
+    if (!time) return '';
+    const [hours, minutes] = time.split(':');
+    const h = parseInt(hours);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${minutes} ${ampm}`;
+  };
+
   const handleSaveLaunch = async () => {
     setLoading(true);
     try {
@@ -124,7 +134,9 @@ export default function Leads() {
         showToast('Agent configuration saved and launched!', 'success');
         setTimeout(() => {
           router.push('/knowledge-base');
-        }, 1500);
+        }, 1200);
+      } else {
+        showToast(response.message || 'Failed to save configuration', 'error');
       }
     } catch (err) {
       showToast(err.message || 'Failed to save configuration', 'error');
@@ -268,7 +280,10 @@ export default function Leads() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '24px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '14px', fontWeight: '500' }}>Calling Window Start</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', fontWeight: '500' }}>Calling Window Start</label>
+                <span style={{ fontSize: '12px', color: 'var(--color-primary)', fontWeight: '600' }}>{format12h(config.timeStart)}</span>
+              </div>
               <input 
                 type="time" 
                 name="timeStart"
@@ -278,7 +293,10 @@ export default function Leads() {
               />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '14px', fontWeight: '500' }}>Calling Window End</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', fontWeight: '500' }}>Calling Window End</label>
+                <span style={{ fontSize: '12px', color: 'var(--color-primary)', fontWeight: '600' }}>{format12h(config.timeEnd)}</span>
+              </div>
               <input 
                 type="time" 
                 name="timeEnd"
