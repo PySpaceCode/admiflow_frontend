@@ -136,7 +136,7 @@ export default function Onboarding() {
         cityAddress: form.city || null,
         websiteUrl: form.website || null,
         phone: form.phone || null,
-        emailVerification: "verified",
+        emailVerification: emailOtp.verified ? "verified" : null,
         phoneVerification: phoneOtp.verified ? "verified" : null,
         socialMediaLinks: {
           fb: form.facebook || null,
@@ -211,6 +211,19 @@ export default function Onboarding() {
           </h2>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            {/* Full Name */}
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label" htmlFor="fullName">Full Name *</label>
+              <input
+                id="fullName"
+                className="input-field"
+                placeholder="e.g. John Doe"
+                value={form.fullName}
+                onChange={set('fullName')}
+                required
+              />
+            </div>
+
             {/* Institute Name */}
             <div className="form-group" style={{ margin: 0 }}>
               <label className="form-label" htmlFor="instituteName">Institute Name *</label>
@@ -275,7 +288,34 @@ export default function Onboarding() {
             📬 Verified Contact
           </h2>
 
-          {/* Phone Number only, Email is handled via profile */}
+          {/* Email */}
+          <div className="form-group">
+            <label className="form-label" htmlFor="email">
+              Email Address
+              {emailOtp.verified && <span style={{ marginLeft: '8px' }}><VerifiedBadge /></span>}
+            </label>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <input
+                id="email"
+                type="email"
+                className="input-field"
+                placeholder="admin@institute.com"
+                value={form.email}
+                onChange={set('email')}
+                style={{ flex: 1 }}
+                disabled={emailOtp.verified}
+              />
+              {!emailOtp.verified && (
+                <OtpButton
+                  id="email-otp-btn"
+                  sent={emailOtp.sent}
+                  loading={emailOtp.loading}
+                  onSend={() => handleSendOtp('email')}
+                  onVerify={(code) => handleVerifyOtp('email', code)}
+                />
+              )}
+            </div>
+          </div>
 
           {/* Phone */}
           <div className="form-group" style={{ marginBottom: 0 }}>
