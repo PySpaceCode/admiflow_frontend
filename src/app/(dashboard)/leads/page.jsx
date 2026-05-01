@@ -183,7 +183,7 @@ export default function Leads() {
       {/* Middle Section: Data Table Preview */}
       <div className="card">
         <h2 style={{ fontSize: '16px', marginBottom: '16px', fontWeight: '600' }}>2. Data Preview</h2>
-        <div className="table-container">
+        <div className="table-container" style={{ maxHeight: '500px', overflowY: 'auto' }}>
           <table className="table">
             <thead>
               <tr>
