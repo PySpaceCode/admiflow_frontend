@@ -1047,9 +1047,15 @@ function UploadDocuments({ reportData, setReportData, documents, setDocuments })
                         {stat.icon}
                       </div>
                       <div>
+                        <div style={{ fontSize: '13px', fontWeight: '800', color: '#94a3b8', marginBottom: '4px' }}>{stat.label}</div>
+                        <div style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a' }}>{stat.val}</div>
+                      </div>
                     </div>
-                    <h3 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a', margin: 0 }}>Learning Ecosystem</h3>
-                  </div>
+                  ))}
+                </div>
+
+                <div className="card" style={{ padding: '48px', borderRadius: '32px', marginTop: '32px' }}>
+                  <h3 style={{ fontSize: '24px', fontWeight: '950', color: '#0f172a', marginBottom: '32px' }}>Learning Ecosystem</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                     {(reportData.learning_outcomes || ['End-to-end Skill Mastery', 'Live Project Exposure', 'Job-ready Portfolio']).map((outcome, i) => (
                       <motion.div 
@@ -1398,6 +1404,7 @@ function UploadDocuments({ reportData, setReportData, documents, setDocuments })
               )}
             </motion.div>
           )}
+          </AnimatePresence>
 
           {/* Action Footer */}
           <div style={{ 
@@ -1442,7 +1449,7 @@ function UploadDocuments({ reportData, setReportData, documents, setDocuments })
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
