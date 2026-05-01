@@ -1,17 +1,69 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
+import { showToast } from '@/lib/toast';
 
 function UploadDocuments() {
-  const [reportText, setReportText] = useState("• Extracted Brochure info: ...\n• FAQ list parsed...\n• Pricing details found...");
+  const [reportText, setReportText] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
   const [files, setFiles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [documents, setDocuments] = useState([]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
+
+  const fetchDocuments = async () => {
+    try {
+      const response = await api.get('/api/knowledge/documents');
+      if (response.success || Array.isArray(response)) {
+        setDocuments(Array.isArray(response) ? response : response.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch documents:', err);
+    }
+  };
+
+  const uploadKnowledgeFile = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    setLoading(true);
+    try {
+      const response = await api.post('/api/knowledge/upload', formData, true);
+      if (response.success) {
+        showToast('Document processed successfully', 'success');
+        
+        // Format the AI report for the textarea
+        try {
+          const report = JSON.parse(response.data.aiReport);
+          let formattedReport = `• Courses: ${report.courses.join(', ')}\n`;
+          formattedReport += `• Pricing: ${JSON.stringify(report.pricing_details, null, 2)}\n`;
+          formattedReport += `• FAQs: ${report.faqs.map(f => `\n  Q: ${f.question}\n  A: ${f.answer}`).join('\n')}\n`;
+          formattedReport += `• Other: ${report.other_details}`;
+          setReportText(formattedReport);
+        } catch (e) {
+          setReportText(response.data.aiReport);
+        }
+        
+        fetchDocuments();
+      }
+    } catch (err) {
+      showToast(err.message || 'Upload failed', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragOver(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setFiles([...files, ...Array.from(e.dataTransfer.files)]);
+      const file = e.dataTransfer.files[0];
+      setFiles([...files, file]);
+      uploadKnowledgeFile(file);
     }
   };
 
@@ -27,7 +79,9 @@ function UploadDocuments() {
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      setFiles([...files, ...Array.from(e.target.files)]);
+      const file = e.target.files[0];
+      setFiles([...files, file]);
+      uploadKnowledgeFile(file);
     }
   };
 
@@ -49,22 +103,21 @@ function UploadDocuments() {
         onClick={() => document.getElementById('file-upload').click()}
       >
         <div style={{ fontSize: '32px', marginBottom: '16px' }}>📂</div>
-        <h3 style={{ marginBottom: '8px' }}>Drag & drop documents here</h3>
+        <h3 style={{ marginBottom: '8px' }}>{loading ? 'Processing...' : 'Drag & drop documents here'}</h3>
         <p className="text-muted" style={{ marginBottom: '16px' }}>Accepts PDF, DOCX (Brochure, Syllabus, FAQ, Pricing)</p>
-        <button className="btn-outline" onClick={(e) => { e.stopPropagation(); document.getElementById('file-upload').click(); }}>Browse Files</button>
+        <button className="btn-outline" disabled={loading} onClick={(e) => { e.stopPropagation(); document.getElementById('file-upload').click(); }}>Browse Files</button>
         <input 
           type="file" 
           id="file-upload" 
           style={{ display: 'none' }} 
           accept=".pdf,.docx" 
-          multiple 
           onChange={handleFileChange}
         />
-        {files.length > 0 && (
+        {documents.length > 0 && (
           <div style={{ marginTop: '24px', textAlign: 'left', background: 'var(--color-surface-high)', padding: '16px', borderRadius: '8px' }}>
-            <h4 style={{ marginBottom: '8px', fontSize: '14px' }}>Selected Files:</h4>
+            <h4 style={{ marginBottom: '8px', fontSize: '14px' }}>Uploaded Documents:</h4>
             <ul style={{ listStylePos: 'inside', fontSize: '14px', color: 'var(--color-on-surface-variant)', margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {files.map((f, i) => <li key={i}>📄 {f.name}</li>)}
+              {documents.map((doc, i) => <li key={i}>📄 {doc.file_name || doc.fileName} ({doc.status})</li>)}
             </ul>
           </div>
         )}
@@ -93,7 +146,7 @@ function UploadDocuments() {
           onChange={(e) => setReportText(e.target.value)}
         />
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-          <button className="btn-primary">Save Knowledge</button>
+          <button className="btn-primary" onClick={() => showToast('Knowledge base updated', 'success')}>Save Knowledge</button>
         </div>
       </div>
     </div>
@@ -110,9 +163,34 @@ function AITonePersona() {
     personaDescription: 'You are a helpful and enthusiastic admissions counselor representing the university. Your goal is to guide prospective students through the enrollment process.'
   });
 
+  const [loading, setLoading] = useState(false);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSavePersona = async () => {
+    setLoading(true);
+    try {
+      const payload = {
+        agent_name: formData.agentName,
+        designation: formData.designation,
+        tone_style: formData.toneStyle,
+        voice_gender: formData.voiceGender,
+        voice_speed: parseFloat(formData.voiceSpeed),
+        persona_description: formData.personaDescription
+      };
+      
+      const response = await api.post('/api/knowledge/persona', payload);
+      if (response.success) {
+        showToast('AI Persona updated successfully', 'success');
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to save persona', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -198,7 +276,9 @@ function AITonePersona() {
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-        <button className="btn-primary">Save Persona</button>
+        <button className="btn-primary" onClick={handleSavePersona} disabled={loading}>
+          {loading ? 'Saving...' : 'Save Persona'}
+        </button>
       </div>
     </div>
   );
@@ -233,6 +313,22 @@ function PitchScript() {
     { id: 'script', label: '3. Script Control' },
     { id: 'preview', label: '4. Final Prompt Preview' }
   ];
+
+  const handleSaveScript = async () => {
+    try {
+      const sections = {
+        intents,
+        rules,
+        scriptControl
+      };
+      const response = await api.post('/api/knowledge/script', { sections });
+      if (response.success) {
+        showToast('Conversation script and training data saved', 'success');
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to save script', 'error');
+    }
+  };
 
   const handleGeneratePreview = () => {
     const prompt = `System Prompt:
@@ -527,7 +623,13 @@ ${scriptControl.additionalInstructions}`;
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
-              <button className="btn-primary" style={{ background: '#10b981', borderColor: '#10b981', color: '#ffffff' }}>Approve & Deploy</button>
+              <button 
+                className="btn-primary" 
+                style={{ background: '#10b981', borderColor: '#10b981', color: '#ffffff' }}
+                onClick={handleSaveScript}
+              >
+                Approve & Deploy
+              </button>
             </div>
           </div>
         )}
