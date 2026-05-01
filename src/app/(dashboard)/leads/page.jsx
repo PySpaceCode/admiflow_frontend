@@ -1,9 +1,11 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { showToast } from '@/lib/toast';
 import { api } from '@/lib/api';
 
 export default function Leads() {
+  const router = useRouter();
   const [isDragOver, setIsDragOver] = useState(false);
   const [files, setFiles] = useState([]);
   const fileInputRef = useRef(null);
