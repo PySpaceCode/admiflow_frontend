@@ -626,7 +626,7 @@ function UploadDocuments({ reportData, setReportData, documents, setDocuments })
 
   const fetchDocuments = async () => {
     try {
-      const response = await api.get('/api/knowledge/documents');
+      const response = await api.get('/api/knowledge-base/documents');
       if (response.success || Array.isArray(response)) {
         setDocuments(Array.isArray(response) ? response : response.data || []);
       }
@@ -641,7 +641,7 @@ function UploadDocuments({ reportData, setReportData, documents, setDocuments })
     
     setLoading(true);
     try {
-      const response = await api.post('/api/knowledge/upload', formData, true);
+      const response = await api.post('/api/knowledge-base/upload', formData, true);
       if (response.success) {
         showToast('Neural extraction complete', 'success');
         const report = typeof response.data.aiReport === 'string' 
@@ -698,7 +698,7 @@ function UploadDocuments({ reportData, setReportData, documents, setDocuments })
   const deleteDocument = async (id) => {
     if (!confirm('Are you sure you want to delete this repository?')) return;
     try {
-      await api.delete(`/api/knowledge/documents/${id}`);
+      await api.delete(`/api/knowledge-base/documents/${id}`);
       showToast('Repository purged', 'success');
       fetchDocuments();
     } catch (err) {
@@ -915,7 +915,7 @@ function UploadDocuments({ reportData, setReportData, documents, setDocuments })
             onSave={async (newData) => {
               try {
                 if (currentDocId) {
-                  const response = await api.patch(`/api/knowledge/documents/${currentDocId}`, newData);
+                  const response = await api.patch(`/api/knowledge-base/documents/${currentDocId}`, newData);
                   if (response.success) {
                     setReportData(newData);
                     setIsEditing(false);
@@ -1473,7 +1473,7 @@ function AITonePersona({ formData, setFormData }) {
         persona_description: formData.personaDescription
       };
       
-      const response = await api.post('/api/knowledge/persona', payload);
+      const response = await api.post('/api/knowledge-base/persona', payload);
       if (response.success) {
         showToast('Neural identity established', 'success');
       }
@@ -1654,7 +1654,7 @@ function PitchScript({ intents, setIntents, rules, setRules, scriptControl, setS
       const payload = {
         sections: { intents, rules, scriptControl }
       };
-      const response = await api.post('/api/knowledge/script', payload);
+      const response = await api.post('/api/knowledge-base/script', payload);
       if (response.success) {
         showToast('Conversation architecture synchronized', 'success');
       }

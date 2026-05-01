@@ -37,8 +37,8 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // POST /api/login → { success, message, data: { access_token, refresh_token, user } }
-      const response = await api.post("/api/login", {
+      // POST /api/auth/login → { success, message, data: { access_token, refresh_token, user } }
+      const response = await api.post("/api/auth/login", {
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
       });
