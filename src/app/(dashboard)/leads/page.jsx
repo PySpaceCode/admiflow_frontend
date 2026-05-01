@@ -49,7 +49,7 @@ export default function Leads() {
     
     setLoading(true);
     try {
-      const response = await api.post('/api/leads/upload', formData, true);
+      const response = await api.post('/api/leads/upload-csv', formData, true);
       if (response.success) {
         showToast(response.message, 'success');
         fetchLeads(); // Refresh table
@@ -123,15 +123,15 @@ export default function Leads() {
     setLoading(true);
     try {
       const payload = {
-        calling_days: config.callingDays,
-        calling_window_start: config.timeStart,
-        calling_window_end: config.timeEnd,
-        maximum_daily_call_attempts: parseInt(config.maxAttempts),
-        human_agent_name: config.fallbackName,
-        human_agent_phone_number: config.fallbackPhone
+        callingDays: config.callingDays,
+        timeStart: config.timeStart,
+        timeEnd: config.timeEnd,
+        maxAttempts: parseInt(config.maxAttempts),
+        fallbackName: config.fallbackName,
+        fallbackPhone: config.fallbackPhone
       };
       
-      const response = await api.post('/api/leads/calling-config', payload);
+      const response = await api.post('/api/leads/campaign/launch', payload);
       if (response.success) {
         showToast('Agent configuration saved and launched!', 'success');
         setTimeout(() => {
