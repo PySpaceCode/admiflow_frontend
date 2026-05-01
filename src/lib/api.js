@@ -69,12 +69,14 @@ async function request(method, path, body = null, isFormData = false) {
         }
       }
 
-      // Wrapped error: { success: false, message: "...", data: null }
-      const errorMsg =
-        data.message ||
-        (typeof data.detail === 'string' ? data.detail : null) ||
-        res.statusText ||
-        'Request failed';
+      // Standardize error responses
+      let errorMsg = data.message || res.statusText || 'Request failed';
+      
+      // If we have detailed crash info from the middleware, include it for debugging
+      if (data.data && typeof data.data === 'object' && data.data.error) {
+        errorMsg = `${errorMsg}: ${data.data.error}`;
+      }
+      
       throw new Error(errorMsg);
     }
 
