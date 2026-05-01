@@ -160,8 +160,8 @@ function UploadDocuments() {
 
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'minmax(0, 1fr) 380px', 
-        gap: '24px',
+        gridTemplateColumns: '1fr 350px', 
+        gap: '32px',
         alignItems: 'start'
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -192,27 +192,33 @@ function UploadDocuments() {
             <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '18px' }}>📋</span> Curriculum & Modules
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', 
+              gap: '16px' 
+            }}>
               {reportData.modules?.map((mod, i) => (
                 <div key={i} style={{ 
                   padding: '16px', 
-                  background: 'rgba(79, 70, 229, 0.03)', 
+                  background: 'var(--color-surface-low)', 
                   borderRadius: '12px', 
                   border: '1px solid var(--color-surface-high)',
-                  transition: 'all 0.2s ease'
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                     <div style={{ fontSize: '10px', color: 'var(--color-primary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Module {mod.module_number || i+1}</div>
                     <div style={{ fontSize: '11px', color: 'var(--color-on-surface-variant)' }}>{mod.topics?.length || 0} Topics</div>
                   </div>
-                  <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', color: 'var(--color-on-surface)' }}>{mod.module_title}</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--color-on-surface)' }}>{mod.module_title}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {mod.topics?.map((topic, j) => (
                       <span key={j} style={{ 
-                        fontSize: '11px', 
-                        padding: '4px 12px', 
+                        fontSize: '10px', 
+                        padding: '3px 10px', 
                         background: 'var(--color-surface)', 
-                        borderRadius: '20px', 
+                        borderRadius: '6px', 
                         border: '1px solid var(--color-surface-high)',
                         color: 'var(--color-on-surface-variant)',
                         fontWeight: '500'
@@ -225,7 +231,7 @@ function UploadDocuments() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', position: 'sticky', top: '24px' }}>
           {/* Contact Information */}
           <div className="card" style={{ padding: '20px' }}>
             <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '16px' }}>📞 Contact Details</h3>
