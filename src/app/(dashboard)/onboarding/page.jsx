@@ -175,7 +175,7 @@ export default function Onboarding() {
     'Arts & Science College',
     'MBA / Management Institute',
     'Coaching Centre',
-    'School (K–12)',
+    'School (K-12)',
     'Polytechnic / Vocational',
     'University',
     'Other',
