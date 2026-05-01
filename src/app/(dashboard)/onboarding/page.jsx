@@ -240,19 +240,38 @@ export default function Onboarding() {
             {/* Institute Type */}
             <div className="form-group" style={{ margin: 0 }}>
               <label className="form-label" htmlFor="instituteType">Institute Type *</label>
-              <select
-                id="instituteType"
-                className="input-field"
-                value={form.instituteType}
-                onChange={set('instituteType')}
-                style={{ cursor: 'pointer', appearance: 'auto' }}
-                required
-              >
-                <option value="">Select type…</option>
-                {instituteTypes.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
+              <div style={{ position: 'relative' }}>
+                <select
+                  id="instituteType"
+                  className="input-field"
+                  value={form.instituteType}
+                  onChange={set('instituteType')}
+                  style={{ 
+                    cursor: 'pointer', 
+                    appearance: 'none',
+                    paddingRight: '40px' 
+                  }}
+                  required
+                >
+                  <option value="" disabled>Select type…</option>
+                  {instituteTypes.map(t => (
+                    <option key={t} value={t} style={{ background: 'var(--color-surface-lowest)', color: 'var(--color-on-surface)' }}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <div style={{ 
+                  position: 'absolute', 
+                  right: '15px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)', 
+                  pointerEvents: 'none',
+                  color: 'var(--color-on-surface-variant)',
+                  fontSize: '12px'
+                }}>
+                  ▼
+                </div>
+              </div>
             </div>
 
             {/* City / Region */}
