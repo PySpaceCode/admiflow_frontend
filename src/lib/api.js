@@ -100,4 +100,19 @@ export const api = {
   put: (path, body) => request('PUT', path, body),
   patch: (path, body) => request('PATCH', path, body),
   delete: (path) => request('DELETE', path),
+  logout: async () => {
+    try {
+      await request('POST', '/api/logout');
+    } catch (err) {
+      console.warn('[API] Logout request failed:', err);
+    } finally {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        // Clear auth cookie for middleware
+        document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      }
+    }
+  }
 };

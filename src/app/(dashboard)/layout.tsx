@@ -74,17 +74,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   async function handleLogout() {
-    try {
-      // Optional: notify backend about logout
-      await api.post('/api/logout');
-    } catch (error) {
-      console.warn('Logout API call failed:', error);
-    } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      showToast('Logged out successfully', 'success');
-      router.push('/login');
-    }
+    await api.logout();
+    showToast('Logged out successfully', 'success');
+    router.push('/login');
   }
 
   const navGroups = [

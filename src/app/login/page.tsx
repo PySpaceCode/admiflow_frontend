@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { Sparkles, ArrowRight, ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle"; 
 import { api } from "@/lib/api";
@@ -46,6 +46,9 @@ export default function LoginPage() {
 
       if (response.success) {
         localStorage.setItem("token", response.data.access_token);
+        // Also set cookie for middleware protection
+        document.cookie = `auth_token=${response.data.access_token}; path=/; max-age=86400; SameSite=Lax`;
+
         if (response.data.refresh_token) {
           localStorage.setItem("refresh_token", response.data.refresh_token);
         }
