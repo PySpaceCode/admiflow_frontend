@@ -5,9 +5,8 @@ import { api } from '@/lib/api';
 import { showToast } from '@/lib/toast';
 
 function UploadDocuments() {
-  const [reportText, setReportText] = useState("");
+  const [reportData, setReportData] = useState(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [documents, setDocuments] = useState([]);
 
@@ -34,16 +33,15 @@ function UploadDocuments() {
     try {
       const response = await api.post('/api/knowledge/upload', formData, true);
       if (response.success) {
-        showToast('Document processed successfully', 'success');
-        
-        // Format the AI report for the textarea (Pretty JSON)
+        showToast('Document processed and analyzed', 'success');
         try {
-          const report = JSON.parse(response.data.aiReport);
-          setReportText(JSON.stringify(report, null, 2));
+          const report = typeof response.data.aiReport === 'string' 
+            ? JSON.parse(response.data.aiReport) 
+            : response.data.aiReport;
+          setReportData(report);
         } catch (e) {
-          setReportText(response.data.aiReport);
+          console.error("Failed to parse report:", e);
         }
-        
         fetchDocuments();
       }
     } catch (err) {
@@ -57,92 +55,209 @@ function UploadDocuments() {
     e.preventDefault();
     setIsDragOver(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      setFiles([...files, file]);
-      uploadKnowledgeFile(file);
+      uploadKnowledgeFile(e.dataTransfer.files[0]);
     }
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
-
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      setFiles([...files, file]);
-      uploadKnowledgeFile(file);
-    }
-  };
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div 
-        className="card"
-        style={{
-          border: isDragOver ? '2px dashed var(--color-primary)' : '2px dashed var(--color-surface-high)',
-          background: isDragOver ? 'var(--color-surface-highest)' : 'var(--color-surface)',
-          padding: '48px',
-          textAlign: 'center',
-          transition: 'all 0.2s',
-          cursor: 'pointer'
-        }}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onClick={() => document.getElementById('file-upload').click()}
-      >
-        <div style={{ fontSize: '32px', marginBottom: '16px' }}>📂</div>
-        <h3 style={{ marginBottom: '8px' }}>{loading ? 'Processing...' : 'Drag & drop documents here'}</h3>
-        <p className="text-muted" style={{ marginBottom: '16px' }}>Accepts PDF, DOCX (Brochure, Syllabus, FAQ, Pricing)</p>
-        <button className="btn-outline" disabled={loading} onClick={(e) => { e.stopPropagation(); document.getElementById('file-upload').click(); }}>Browse Files</button>
-        <input 
-          type="file" 
-          id="file-upload" 
-          style={{ display: 'none' }} 
-          accept=".pdf,.docx" 
-          onChange={handleFileChange}
-        />
+  if (!reportData && !loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div 
+          className="card"
+          style={{
+            border: isDragOver ? '2px dashed var(--color-primary)' : '2px dashed var(--color-surface-high)',
+            background: isDragOver ? 'var(--color-surface-highest)' : 'var(--color-surface)',
+            padding: '80px 48px',
+            textAlign: 'center',
+            transition: 'all 0.2s',
+            cursor: 'pointer',
+            borderRadius: '16px'
+          }}
+          onDrop={handleDrop}
+          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+          onDragLeave={() => setIsDragOver(false)}
+          onClick={() => document.getElementById('file-upload').click()}
+        >
+          <div style={{ fontSize: '48px', marginBottom: '24px' }}>📄</div>
+          <h2 style={{ marginBottom: '12px', fontSize: '20px' }}>Train your AI Sales Agent</h2>
+          <p className="text-muted" style={{ marginBottom: '24px', maxWidth: '400px', marginInline: 'auto' }}>
+            Upload your brochure or syllabus (PDF/DOCX). We'll extract every detail to ensure your agent never misses a lead.
+          </p>
+          <button className="btn-primary" style={{ padding: '12px 32px' }}>Browse Files</button>
+          <input type="file" id="file-upload" style={{ display: 'none' }} accept=".pdf,.docx" onChange={(e) => e.target.files?.[0] && uploadKnowledgeFile(e.target.files[0])} />
+        </div>
+        
         {documents.length > 0 && (
-          <div style={{ marginTop: '24px', textAlign: 'left', background: 'var(--color-surface-high)', padding: '16px', borderRadius: '8px' }}>
-            <h4 style={{ marginBottom: '8px', fontSize: '14px' }}>Uploaded Documents:</h4>
-            <ul style={{ listStylePos: 'inside', fontSize: '14px', color: 'var(--color-on-surface-variant)', margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {documents.map((doc, i) => <li key={i}>📄 {doc.file_name || doc.fileName} ({doc.status})</li>)}
-            </ul>
+          <div className="card">
+            <h3 style={{ fontSize: '16px', marginBottom: '16px' }}>Training History</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {documents.map((doc, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'var(--color-surface-highest)', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '20px' }}>📄</span>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: '600' }}>{doc.file_name || doc.fileName}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--color-on-surface-variant)' }}>Processed successfully</div>
+                    </div>
+                  </div>
+                  <button className="btn-outline" style={{ fontSize: '12px', padding: '4px 12px' }} onClick={() => setReportData(JSON.parse(doc.ai_report || doc.aiReport))}>View Report</button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
+    );
+  }
 
+  if (loading) {
+    return (
+      <div className="card" style={{ textAlign: 'center', padding: '100px 0' }}>
+        <div className="spinner" style={{ margin: '0 auto 24px auto', width: '40px', height: '40px', border: '4px solid var(--color-surface-high)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <h3 style={{ fontSize: '18px', marginBottom: '8px' }}>Analyzing Brochure...</h3>
+        <p className="text-muted">Extracting modules, pricing, and FAQs to train your agent.</p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* Header Profile Section */}
+      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: 'linear-gradient(to right, var(--color-surface), var(--color-surface-highest))' }}>
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '12px', background: 'var(--color-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold' }}>
+            {reportData.institute_name?.[0] || 'AF'}
+          </div>
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: '700', margin: '0 0 4px 0' }}>{reportData.institute_name}</h1>
+            <p className="text-muted" style={{ margin: 0 }}>{reportData.institute_tagline}</p>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+              {reportData.accreditation && <span style={{ fontSize: '11px', padding: '2px 8px', background: '#e0f2fe', color: '#0369a1', borderRadius: '4px', fontWeight: '600' }}>{reportData.accreditation}</span>}
+              {reportData.naac_grade && <span style={{ fontSize: '11px', padding: '2px 8px', background: '#f0fdf4', color: '#166534', borderRadius: '4px', fontWeight: '600' }}>NAAC {reportData.naac_grade}</span>}
+              {reportData.placement_support && <span style={{ fontSize: '11px', padding: '2px 8px', background: '#fff7ed', color: '#9a3412', borderRadius: '4px', fontWeight: '600' }}>Placement Assistance</span>}
+            </div>
+          </div>
+        </div>
+        <button className="btn-outline" onClick={() => setReportData(null)}>Re-upload</button>
+      </div>
+
+      {/* Quick Stats Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+        {[
+          { label: 'Course Fee', value: reportData.courses?.[0]?.fee ? `₹${reportData.courses[0].fee}` : 'N/A', icon: '💰' },
+          { label: 'Duration', value: reportData.courses?.[0]?.duration || 'N/A', icon: '⏱️' },
+          { label: 'Total Hours', value: reportData.courses?.[0]?.total_hours || 'N/A', icon: '📚' },
+          { label: 'Mode', value: reportData.courses?.[0]?.mode || 'N/A', icon: '💻' }
+        ].map((stat, i) => (
+          <div key={i} className="card" style={{ padding: '20px', textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>{stat.icon}</div>
+            <div className="text-muted" style={{ fontSize: '12px', marginBottom: '4px' }}>{stat.label}</div>
+            <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--color-primary)' }}>{stat.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Course Details */}
+          <div className="card">
+            <h3 style={{ fontSize: '16px', marginBottom: '16px', borderBottom: '1px solid var(--color-surface-high)', paddingBottom: '12px' }}>Course Details</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[
+                { label: 'Course Name', value: reportData.courses?.[0]?.course_name },
+                { label: 'Course Code', value: reportData.courses?.[0]?.course_code },
+                { label: 'Eligibility', value: reportData.courses?.[0]?.eligibility },
+                { label: 'Coordinator', value: reportData.courses?.[0]?.coordinator },
+                { label: 'Partner', value: reportData.courses?.[0]?.partner_institute }
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span className="text-muted">{item.label}</span>
+                  <span style={{ fontWeight: '600' }}>{item.value || 'N/A'}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Modules Section */}
+          <div className="card">
+            <h3 style={{ fontSize: '16px', marginBottom: '16px', borderBottom: '1px solid var(--color-surface-high)', paddingBottom: '12px' }}>Course Modules</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {reportData.modules?.map((mod, i) => (
+                <div key={i} style={{ padding: '16px', background: 'var(--color-surface-highest)', borderRadius: '12px', borderLeft: '4px solid var(--color-primary)' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--color-primary)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '4px' }}>Module {mod.module_number || i+1}</div>
+                  <div style={{ fontSize: '15px', fontWeight: '700', marginBottom: '12px' }}>{mod.module_title}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {mod.topics?.map((topic, j) => (
+                      <span key={j} style={{ fontSize: '11px', padding: '4px 10px', background: 'white', borderRadius: '12px', border: '1px solid var(--color-surface-high)' }}>{topic}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Contact Information */}
+          <div className="card">
+            <h3 style={{ fontSize: '16px', marginBottom: '16px', borderBottom: '1px solid var(--color-surface-high)', paddingBottom: '12px' }}>Contact Information</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {[
+                { icon: '📧', label: 'Email', value: reportData.contact?.email },
+                { icon: '📞', label: 'Phone', value: reportData.contact?.phone },
+                { icon: '🌐', label: 'Website', value: reportData.contact?.website },
+                { icon: '📍', label: 'Branches', value: reportData.contact?.branches?.join(' • ') }
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--color-surface-high)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{item.icon}</div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-on-surface-variant)' }}>{item.label}</div>
+                    <div style={{ fontSize: '13px', fontWeight: '600' }}>{item.value || 'N/A'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Learning Outcomes */}
+          <div className="card">
+            <h3 style={{ fontSize: '16px', marginBottom: '16px' }}>Learning Outcomes</h3>
+            <ul style={{ padding: 0, margin: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {reportData.learning_outcomes?.map((outcome, i) => (
+                <li key={i} style={{ fontSize: '13px', display: 'flex', gap: '10px' }}>
+                  <span style={{ color: 'var(--color-primary)' }}>•</span>
+                  {outcome}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Tools & Tech */}
+          <div className="card">
+            <h3 style={{ fontSize: '16px', marginBottom: '12px' }}>Tools & Technologies</h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {reportData.tools_technologies?.map((tool, i) => (
+                <span key={i} style={{ fontSize: '12px', padding: '6px 12px', background: 'var(--color-surface-highest)', borderRadius: '8px', border: '1px solid var(--color-surface-high)' }}>{tool}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FAQs and Final Save */}
       <div className="card">
-        <h3 style={{ marginBottom: '16px' }}>AI Analysis Report</h3>
-        <p className="text-muted" style={{ marginBottom: '16px', fontSize: '14px' }}>
-          Review and edit the extracted key points before saving them to the AI's knowledge base.
-        </p>
-        <textarea
-          style={{
-            width: '100%',
-            minHeight: '200px',
-            padding: '16px',
-            borderRadius: '8px',
-            border: '1px solid var(--color-surface-high)',
-            background: 'var(--color-surface)',
-            color: 'var(--color-on-surface)',
-            fontFamily: 'inherit',
-            lineHeight: '1.6',
-            resize: 'vertical',
-            marginBottom: '16px'
-          }}
-          value={reportText}
-          onChange={(e) => setReportText(e.target.value)}
-        />
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-          <button className="btn-primary" onClick={() => showToast('Knowledge base updated', 'success')}>Save Knowledge</button>
+        <h3 style={{ fontSize: '16px', marginBottom: '16px' }}>Frequently Asked Questions</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {reportData.faqs?.map((faq, i) => (
+            <div key={i} style={{ padding: '16px', background: 'var(--color-surface-highest)', borderRadius: '12px' }}>
+              <div style={{ fontSize: '14px', fontWeight: '700', marginBottom: '4px' }}>Q: {faq.question}</div>
+              <div style={{ fontSize: '14px', color: 'var(--color-on-surface-variant)' }}>A: {faq.answer}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '32px' }}>
+          <button className="btn-primary" style={{ padding: '16px 48px', fontSize: '16px' }} onClick={() => showToast('Knowledge base finalized and deployed!', 'success')}>Approve & Deploy Knowledge 🚀</button>
         </div>
       </div>
     </div>
