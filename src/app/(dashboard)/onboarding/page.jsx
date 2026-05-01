@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { showToast } from '@/lib/toast';
+import { api } from '@/lib/api';
+import { useEffect } from 'react';
 
 // ── OTP Verify Button ───────────────────────────────────────
 function OtpButton({ id, sent, loading, onSend, onVerify }) {
@@ -51,6 +53,7 @@ export default function Onboarding() {
 
   // Core fields
   const [form, setForm] = useState({
+    fullName: '',
     instituteName: '',
     instituteType: '',
     email: '',
@@ -62,6 +65,16 @@ export default function Onboarding() {
     facebook: '',
     twitter: '',
   });
+
+  // Pre-fill from stored user if available
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    setForm(prev => ({
+      ...prev,
+      fullName: storedUser.full_name || '',
+      email: storedUser.email || prev.email,
+    }));
+  }, []);
 
   // OTP states
   const [emailOtp, setEmailOtp] = useState({ sent: false, loading: false, verified: false });
@@ -108,11 +121,52 @@ export default function Onboarding() {
       showToast('Institute name is required', 'error');
       return;
     }
+    if (!form.fullName.trim()) {
+      showToast('Full name is required', 'error');
+      return;
+    }
+
     setSaving(true);
-    await new Promise(r => setTimeout(r, 1000)); // Simulate API delay
-    showToast('Account profile saved ✓', 'success');
-    setSaving(false);
-    setTimeout(() => router.push('/knowledge-base'), 800);
+    try {
+      const payload = {
+        fullName: form.fullName,
+        email: form.email,
+        instituteName: form.instituteName,
+        instituteType: form.instituteType || null,
+        cityAddress: form.city || null,
+        websiteUrl: form.website || null,
+        phone: form.phone || null,
+        emailVerification: "verified",
+        phoneVerification: phoneOtp.verified ? "verified" : null,
+        socialMediaLinks: {
+          fb: form.facebook || null,
+          ig: form.instagram || null,
+          linkedin: form.linkedin || null,
+          x: form.twitter || null
+        }
+      };
+
+      const response = await api.post('/api/onboarding/setup', payload);
+      
+      if (response.success) {
+        showToast('Onboarding setup completes', 'success');
+        // Update local user data if changed
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        localStorage.setItem('user', JSON.stringify({ 
+          ...storedUser, 
+          full_name: form.fullName,
+          onboarding_completed: true 
+        }));
+        
+        setTimeout(() => router.push('/knowledge-base'), 1500);
+      } else {
+        showToast(response.message || 'Failed to save onboarding details', 'error');
+      }
+    } catch (error) {
+      showToast(error.message || 'An error occurred during onboarding', 'error');
+    } finally {
+      setSaving(false);
+    }
   }
 
   const instituteTypes = [
@@ -221,34 +275,7 @@ export default function Onboarding() {
             📬 Verified Contact
           </h2>
 
-          {/* Email */}
-          <div className="form-group">
-            <label className="form-label" htmlFor="email">
-              Email Address
-              {emailOtp.verified && <span style={{ marginLeft: '8px' }}><VerifiedBadge /></span>}
-            </label>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <input
-                id="email"
-                type="email"
-                className="input-field"
-                placeholder="admin@institute.com"
-                value={form.email}
-                onChange={set('email')}
-                style={{ flex: 1 }}
-                disabled={emailOtp.verified}
-              />
-              {!emailOtp.verified && (
-                <OtpButton
-                  id="email-otp-btn"
-                  sent={emailOtp.sent}
-                  loading={emailOtp.loading}
-                  onSend={() => handleSendOtp('email')}
-                  onVerify={(code) => handleVerifyOtp('email', code)}
-                />
-              )}
-            </div>
-          </div>
+          {/* Phone Number only, Email is handled via profile */}
 
           {/* Phone */}
           <div className="form-group" style={{ marginBottom: 0 }}>
