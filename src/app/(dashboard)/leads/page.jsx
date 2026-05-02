@@ -22,6 +22,8 @@ export default function Leads() {
 
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [retrying, setRetrying] = useState(false);
 
   // Fetch leads on mount
   useEffect(() => {
@@ -30,32 +32,38 @@ export default function Leads() {
 
   async function fetchLeads() {
     setLoading(true);
+    setError(null);
     try {
       const response = await api.get('/api/leads/');
-      if (response.success || Array.isArray(response)) {
-        // Handle both wrapped and unwrapped responses
-        setLeads(Array.isArray(response) ? response : response.data || []);
-      }
+      // Handle both wrapped { success, data: [...] } and flat array
+      const list = Array.isArray(response) ? response
+        : Array.isArray(response?.data) ? response.data : [];
+      setLeads(list);
     } catch (err) {
-      console.error('Failed to fetch leads:', err);
+      setError(err.message || 'Failed to load leads');
     } finally {
       setLoading(false);
     }
   }
 
   const uploadFile = async (file) => {
+    // Accept csv, xls, xlsx
+    const allowed = ['text/csv','application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['csv','xls','xlsx'].includes(ext)) {
+      showToast('Please upload a CSV, XLS, or XLSX file', 'error');
+      return;
+    }
     const formData = new FormData();
     formData.append('file', file);
-    
     setLoading(true);
     try {
       const response = await api.post('/api/leads/upload-csv', formData, true);
-      if (response.success) {
-        showToast(response.message, 'success');
-        fetchLeads(); // Refresh table
-      } else {
-        showToast(response.message || 'Upload failed', 'error');
-      }
+      // Handle both wrapped and flat responses
+      const msg = response?.message ?? response?.data?.message ?? 'Leads uploaded successfully';
+      showToast(msg, 'success');
+      fetchLeads(); // Refresh table
     } catch (err) {
       showToast(err.message || 'File upload failed', 'error');
     } finally {
@@ -156,9 +164,21 @@ export default function Leads() {
         </div>
       </div>
 
+      {/* Error banner */}
+      {error && (
+        <div className="card" style={{ padding: '32px', textAlign: 'center', marginBottom: '0',
+          borderLeft: `4px solid ${error.includes('cannot reach') || error.includes('failed to fetch') ? 'var(--color-warning)' : 'var(--color-danger)'}` }}>
+          <p style={{ margin: '0 0 12px', fontWeight: '600' }}>{error.includes('cannot reach') ? '⏳ Backend waking up — retry in ~30 sec' : `⚠️ ${error}`}</p>
+          <button className="btn-outline" disabled={retrying}
+            onClick={() => { setRetrying(true); setTimeout(fetchLeads, 500); }}>
+            🔄 {retrying ? 'Retrying…' : 'Retry'}
+          </button>
+        </div>
+      )}
+
       {/* Top Section: File Upload */}
       <div className="card">
-        <h2 style={{ fontSize: '16px', marginBottom: '16px', fontWeight: '600' }}>1. Bulk Import Leads (CSV)</h2>
+        <h2 style={{ fontSize: '16px', marginBottom: '16px', fontWeight: '600' }}>1. Bulk Import Leads (CSV / XLS / XLSX)</h2>
         <div 
           style={{
             border: isDragOver ? '2px dashed var(--color-primary)' : '2px dashed var(--color-surface-high)',
@@ -175,15 +195,14 @@ export default function Leads() {
           onClick={() => fileInputRef.current?.click()}
         >
           <div style={{ fontSize: '32px', marginBottom: '16px' }}>📄</div>
-          <h3 style={{ marginBottom: '8px', fontSize: '15px' }}>Drag & drop your CSV file here</h3>
-          <p className="text-muted" style={{ marginBottom: '16px', fontSize: '14px' }}>Ensure your CSV includes Name, Phone, and Course fields.</p>
+          <h3 style={{ marginBottom: '8px', fontSize: '15px' }}>Drag & drop your file here</h3>
+          <p className="text-muted" style={{ marginBottom: '16px', fontSize: '14px' }}>Supports CSV, XLS, XLSX — include Name, Phone, and Course columns.</p>
           <button className="btn btn-outline" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>Browse Files</button>
           <input 
             type="file" 
             ref={fileInputRef} 
             style={{ display: 'none' }} 
-            accept=".csv" 
-            multiple 
+            accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
             onChange={handleFileChange}
           />
           {files.length > 0 && (

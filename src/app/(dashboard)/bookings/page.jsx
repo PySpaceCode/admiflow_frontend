@@ -8,38 +8,45 @@ export default function Bookings() {
   const [bookings, setBookings] = useState([]);
   const [agents, setAgents] = useState([{ id: 0, name: 'Unassigned' }]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retrying, setRetrying] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
+    setError(null);
     try {
       // Fetch bookings
       const bookRes = await api.get('/api/bookings/');
-      if (bookRes.success) {
-        const mapped = bookRes.data.map(b => {
-          const displayDate = b.scheduled_at || b.created_at;
-          return {
-            id: b.id,
-            name: b.leadName,
-            phone: b.leadPhone,
-            date: new Date(displayDate).toISOString().split('T')[0],
-            time: new Date(displayDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            status: b.status.charAt(0).toUpperCase() + b.status.slice(1).toLowerCase(),
-            agent: b.agentName,
-            course: b.leadCourse,
-            scheduledAt: b.scheduled_at
-          };
-        });
-        setBookings(mapped);
-      }
+      // Handle both wrapped { success, data: [...] } and flat array
+      const bookList = Array.isArray(bookRes) ? bookRes
+        : Array.isArray(bookRes?.data) ? bookRes.data : [];
+      const mapped = bookList.map(b => {
+        const displayDate = b.scheduled_at || b.created_at;
+        return {
+          id: b.id,
+          name: b.leadName || b.lead_name || b.name || 'Lead',
+          phone: b.leadPhone || b.lead_phone || b.phone || '',
+          date: displayDate ? new Date(displayDate).toISOString().split('T')[0] : '',
+          time: displayDate ? new Date(displayDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+          status: b.status ? b.status.charAt(0).toUpperCase() + b.status.slice(1).toLowerCase() : 'Pending',
+          agent: b.agentName || b.agent_name || 'Unassigned',
+          course: b.leadCourse || b.lead_course || b.course || '',
+          scheduledAt: b.scheduled_at
+        };
+      });
+      setBookings(mapped);
 
       // Fetch agents
       const userRes = await api.get('/api/auth/users');
-      if (userRes.success) {
-        setAgents([{ id: 0, name: 'Unassigned' }, ...userRes.data]);
+      const userList = Array.isArray(userRes) ? userRes
+        : Array.isArray(userRes?.data) ? userRes.data : [];
+      if (userList.length > 0) {
+        setAgents([{ id: 0, name: 'Unassigned' }, ...userList]);
       }
     } catch (err) {
+      setError(err.message || 'Failed to load bookings');
       showToast(err.message, 'error');
     } finally {
       setLoading(false);
@@ -149,7 +156,29 @@ export default function Bookings() {
   };
 
   if (loading) {
-    return <div className="skeleton" style={{ height: '400px', width: '100%' }}></div>;
+    return <div className="skeleton" style={{ height: '400px', width: '100%', borderRadius: '12px' }}></div>;
+  }
+
+  if (error) {
+    const isNetwork = error.toLowerCase().includes('cannot reach') || error.toLowerCase().includes('failed to fetch');
+    return (
+      <div className="card" style={{ padding: '48px', textAlign: 'center',
+        borderLeft: `4px solid ${isNetwork ? 'var(--color-warning)' : 'var(--color-danger)'}` }}>
+        <div style={{ fontSize: '48px', marginBottom: '12px' }}>{isNetwork ? '⏳' : '⚠️'}</div>
+        <h3 style={{ marginBottom: '8px', color: isNetwork ? 'var(--color-warning)' : 'var(--color-danger)' }}>
+          {isNetwork ? 'Backend is starting up…' : 'Error loading bookings'}
+        </h3>
+        <p className="text-muted" style={{ marginBottom: '24px' }}>
+          {isNetwork ? 'Server wakes up after inactivity. Click Retry in ~30 seconds.' : error}
+        </p>
+        <button className="btn-outline"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+          disabled={retrying}
+          onClick={() => { setRetrying(true); setTimeout(fetchData, 500); }}>
+          🔄 {retrying ? 'Retrying…' : 'Retry'}
+        </button>
+      </div>
+    );
   }
 
   return (

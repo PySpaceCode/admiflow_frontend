@@ -222,6 +222,246 @@ interface KnowledgeReportViewProps {
 const KnowledgeReportView = ({ data }: KnowledgeReportViewProps) => {
   if (!data) return null;
 
+  // Normalise keys — backend may use different naming conventions
+  const name        = data.institute_name  ?? data.instituteName  ?? data.name        ?? 'Institute';
+  const tagline     = data.institute_tagline ?? data.tagline      ?? data.description ?? '';
+  const type        = data.institute_type  ?? data.instituteType  ?? data.type        ?? '';
+  const established = data.established     ?? data.founded        ?? '';
+  const accreditation = data.accreditation ?? data.accredited_by  ?? '';
+  const location    = data.location        ?? data.city           ?? data.address     ?? data.contact?.address ?? '';
+  const website     = data.contact?.website ?? data.website       ?? '';
+  const email       = data.contact?.email  ?? data.email          ?? '';
+  const phone       = data.contact?.phone  ?? data.phone          ?? '';
+  const courses     = Array.isArray(data.courses)   ? data.courses   : [];
+  const modules     = Array.isArray(data.modules)   ? data.modules   : [];
+  const highlights  = Array.isArray(data.highlights) ? data.highlights
+                    : Array.isArray(data.key_highlights) ? data.key_highlights : [];
+  const tools       = Array.isArray(data.tools_technologies) ? data.tools_technologies
+                    : Array.isArray(data.tools) ? data.tools : [];
+  const jobScope    = Array.isArray(data.job_scope)    ? data.job_scope
+                    : Array.isArray(data.career_paths)  ? data.career_paths
+                    : Array.isArray(data.placements)    ? data.placements : [];
+  const faqs        = Array.isArray(data.faqs) ? data.faqs : [];
+  const facilities  = Array.isArray(data.facilities)   ? data.facilities
+                    : Array.isArray(data.infrastructure) ? data.infrastructure : [];
+  const admissions  = data.admission_process ?? data.admissions ?? data.how_to_apply ?? null;
+  const scholarship = data.scholarships ?? data.scholarship_info ?? null;
+  const rawText     = data.raw_text ?? null;
+
+  const Chip = ({ children, color = '#6366f1', bg = '#eef2ff' }: any) => (
+    <span style={{ padding: '6px 14px', borderRadius: '20px', background: bg, color,
+      fontSize: '13px', fontWeight: '700', display: 'inline-block' }}>{children}</span>
+  );
+
+  const InfoSection = ({ title, icon, children, color = '#6366f1' }: any) => (
+    <div style={{ background: '#ffffff', borderRadius: '20px', padding: '28px 32px',
+      border: '1px solid #f1f5f9', boxShadow: '0 2px 12px rgba(0,0,0,0.03)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${color}18`,
+          color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
+        <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+      style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '80px' }}>
+
+      {/* ── Hero banner ── */}
+      <div style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+        borderRadius: '24px', padding: '40px 48px', color: 'white', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position:'absolute', top:'-40px', right:'-40px', width:'240px', height:'240px',
+          background:'rgba(255,255,255,0.07)', borderRadius:'50%', pointerEvents:'none' }}/>
+        <div style={{ display: 'flex', gap: '24px', alignItems: 'center', position: 'relative' }}>
+          <div style={{ width:'80px', height:'80px', borderRadius:'20px', background:'rgba(255,255,255,0.15)',
+            display:'flex', alignItems:'center', justifyContent:'center', fontSize:'36px', fontWeight:'900', flexShrink:0 }}>
+            {name[0]}
+          </div>
+          <div style={{ flex:1 }}>
+            <div style={{ display:'flex', gap:'8px', marginBottom:'10px', flexWrap:'wrap' }}>
+              <span style={{ background:'rgba(255,255,255,0.15)', borderRadius:'20px', padding:'4px 12px', fontSize:'12px', fontWeight:'700' }}>✓ AI Extracted</span>
+              {type && <span style={{ background:'rgba(255,255,255,0.12)', borderRadius:'20px', padding:'4px 12px', fontSize:'12px', fontWeight:'700' }}>{type}</span>}
+              {established && <span style={{ background:'rgba(255,255,255,0.12)', borderRadius:'20px', padding:'4px 12px', fontSize:'12px' }}>Est. {established}</span>}
+            </div>
+            <h1 style={{ margin:'0 0 8px', fontSize:'32px', fontWeight:'900', letterSpacing:'-0.02em' }}>{name}</h1>
+            {tagline && <p style={{ margin:0, opacity:0.85, fontSize:'16px', fontWeight:'500', maxWidth:'700px' }}>{tagline}</p>}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Quick stats ── */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))', gap:'12px' }}>
+        {[
+          { label:'Programs', value: courses.length || '—' },
+          { label:'Modules',  value: modules.length  || '—' },
+          { label:'FAQs',     value: faqs.length     || '—' },
+          { label:'Career Paths', value: jobScope.length || '—' },
+        ].map((s,i) => (
+          <div key={i} style={{ background:'#ffffff', border:'1px solid #f1f5f9', borderRadius:'14px', padding:'18px', textAlign:'center' }}>
+            <div style={{ fontSize:'26px', fontWeight:'900', color:'#6366f1' }}>{s.value}</div>
+            <div style={{ fontSize:'11px', color:'#94a3b8', fontWeight:'700', textTransform:'uppercase', marginTop:'4px' }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Courses / Programs ── */}
+      {courses.length > 0 && (
+        <InfoSection title={`Programs & Courses (${courses.length})`} icon={<GraduationCap size={18}/>} color="#6366f1">
+          <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
+            {courses.map((c: any, i: number) => (
+              <div key={i} style={{ padding:'18px 20px', background:'#f8fafc', borderRadius:'14px', border:'1px solid #e2e8f0' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:'8px' }}>
+                  <div style={{ fontWeight:'800', fontSize:'15px', color:'#0f172a' }}>
+                    {c.course_name ?? c.name ?? c.title ?? `Course ${i+1}`}
+                  </div>
+                  {(c.fee ?? c.fees ?? c.tuition_fee) && <Chip color="#6366f1">{c.fee ?? c.fees ?? c.tuition_fee}</Chip>}
+                </div>
+                <div style={{ display:'flex', gap:'10px', marginTop:'10px', flexWrap:'wrap' }}>
+                  {(c.duration ?? c.course_duration) && <span style={{ fontSize:'12px', color:'#64748b' }}>🕒 {c.duration ?? c.course_duration}</span>}
+                  {(c.eligibility ?? c.qualification) && <span style={{ fontSize:'12px', color:'#64748b' }}>📋 {c.eligibility ?? c.qualification}</span>}
+                  {(c.seats ?? c.intake) && <span style={{ fontSize:'12px', color:'#64748b' }}>👥 {c.seats ?? c.intake} seats</span>}
+                  {(c.mode ?? c.delivery_mode) && <Chip color="#10b981" bg="#f0fdf4">{c.mode ?? c.delivery_mode}</Chip>}
+                </div>
+                {c.description && <p style={{ margin:'8px 0 0', fontSize:'13px', color:'#475569', lineHeight:1.6 }}>{c.description}</p>}
+              </div>
+            ))}
+          </div>
+        </InfoSection>
+      )}
+
+      {/* ── Curriculum Modules ── */}
+      {modules.length > 0 && (
+        <InfoSection title={`Curriculum & Modules (${modules.length})`} icon={<BookOpen size={18}/>} color="#8b5cf6">
+          <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
+            {modules.map((mod: any, i: number) => (
+              <div key={i} style={{ display:'flex', gap:'14px', alignItems:'flex-start', padding:'14px', background:'#faf5ff', borderRadius:'12px', border:'1px solid #ede9fe' }}>
+                <div style={{ width:'32px', height:'32px', borderRadius:'8px', flexShrink:0, background:'linear-gradient(135deg,#8b5cf6,#6d28d9)', color:'white', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'900', fontSize:'14px' }}>{i+1}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontWeight:'800', color:'#3b0764', marginBottom:'8px', fontSize:'14px' }}>
+                    {mod.module_title ?? mod.title ?? mod.name ?? `Module ${i+1}`}
+                  </div>
+                  {Array.isArray(mod.topics) && mod.topics.length > 0 && (
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:'6px' }}>
+                      {mod.topics.map((t: string, j: number) => (
+                        <span key={j} style={{ padding:'3px 9px', background:'rgba(139,92,246,0.1)', borderRadius:'8px', fontSize:'12px', fontWeight:'600', color:'#6d28d9' }}>{t}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </InfoSection>
+      )}
+
+      {/* ── Highlights + Contact ── */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:'20px' }}>
+        {highlights.length > 0 && (
+          <InfoSection title="Key Highlights" icon={<Zap size={18}/>} color="#f59e0b">
+            <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+              {highlights.map((h: any, i: number) => (
+                <div key={i} style={{ display:'flex', gap:'8px', alignItems:'flex-start' }}>
+                  <div style={{ width:'18px', height:'18px', borderRadius:'50%', background:'#10b981', color:'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'10px', flexShrink:0, marginTop:'2px' }}>✓</div>
+                  <span style={{ fontSize:'13px', color:'#334155', lineHeight:1.5 }}>{h}</span>
+                </div>
+              ))}
+            </div>
+          </InfoSection>
+        )}
+        <InfoSection title="Contact Information" icon={<Phone size={18}/>} color="#10b981">
+          <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+            {[['📧','Email',email],['📞','Phone',phone],['🌐','Website',website],['📍','Location',location]].map(([icon,label,value]) => value ? (
+              <div key={label} style={{ display:'flex', gap:'10px', padding:'10px 12px', background:'#f0fdf4', borderRadius:'10px' }}>
+                <span style={{ fontSize:'15px' }}>{icon}</span>
+                <div>
+                  <div style={{ fontSize:'10px', fontWeight:'700', color:'#94a3b8', textTransform:'uppercase' }}>{label}</div>
+                  <div style={{ fontSize:'13px', fontWeight:'600', color:'#0f172a', wordBreak:'break-all' }}>{value}</div>
+                </div>
+              </div>
+            ) : null)}
+            {accreditation && <div style={{ padding:'10px 12px', background:'#eff6ff', borderRadius:'10px', fontSize:'12px', color:'#1e40af' }}>🏅 <strong>Accreditation:</strong> {accreditation}</div>}
+          </div>
+        </InfoSection>
+      </div>
+
+      {/* ── Facilities ── */}
+      {facilities.length > 0 && (
+        <InfoSection title="Facilities & Infrastructure" icon={<Layout size={18}/>} color="#0ea5e9">
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'8px' }}>
+            {facilities.map((f: any, i: number) => <Chip key={i} color="#0369a1" bg="#e0f2fe">{typeof f==='string'?f:f.name??f}</Chip>)}
+          </div>
+        </InfoSection>
+      )}
+
+      {/* ── Tools + Career Paths ── */}
+      {(tools.length > 0 || jobScope.length > 0) && (
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:'20px' }}>
+          {tools.length > 0 && (
+            <InfoSection title="Tools & Technologies" icon={<Terminal size={18}/>} color="#f59e0b">
+              <div style={{ display:'flex', flexWrap:'wrap', gap:'8px' }}>
+                {tools.map((t: any, i: number) => <Chip key={i} color="#92400e" bg="#fffbeb">{typeof t==='string'?t:t.name??t}</Chip>)}
+              </div>
+            </InfoSection>
+          )}
+          {jobScope.length > 0 && (
+            <InfoSection title="Career Paths & Placements" icon={<Target size={18}/>} color="#10b981">
+              <div style={{ display:'flex', flexDirection:'column', gap:'7px' }}>
+                {jobScope.map((r: any, i: number) => (
+                  <div key={i} style={{ display:'flex', gap:'8px', alignItems:'center', padding:'9px 12px', background:'#f0fdf4', borderRadius:'9px' }}>
+                    <div style={{ width:'7px', height:'7px', borderRadius:'2px', background:'#10b981', flexShrink:0 }}/>
+                    <span style={{ fontSize:'13px', fontWeight:'600', color:'#065f46' }}>{typeof r==='string'?r:r.role??r.title??r}</span>
+                  </div>
+                ))}
+              </div>
+            </InfoSection>
+          )}
+        </div>
+      )}
+
+      {/* ── Admissions ── */}
+      {admissions && (
+        <InfoSection title="Admissions Process" icon={<FileText size={18}/>} color="#6366f1">
+          <p style={{ margin:0, fontSize:'14px', color:'#475569', lineHeight:1.7, whiteSpace:'pre-line' }}>
+            {typeof admissions==='string' ? admissions : JSON.stringify(admissions, null, 2)}
+          </p>
+        </InfoSection>
+      )}
+
+      {/* ── Scholarships ── */}
+      {scholarship && (
+        <InfoSection title="Scholarships & Financial Aid" icon={<Award size={18}/>} color="#a855f7">
+          <p style={{ margin:0, fontSize:'14px', color:'#475569', lineHeight:1.7, whiteSpace:'pre-line' }}>
+            {typeof scholarship==='string' ? scholarship : JSON.stringify(scholarship, null, 2)}
+          </p>
+        </InfoSection>
+      )}
+
+      {/* ── FAQs ── */}
+      {faqs.length > 0 && (
+        <InfoSection title={`FAQs (${faqs.length})`} icon={<HelpCircle size={18}/>} color="#a855f7">
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:'14px' }}>
+            {faqs.map((faq: any, i: number) => (
+              <div key={i} style={{ padding:'18px', background:'#faf5ff', borderRadius:'12px', border:'1px solid #ede9fe' }}>
+                <div style={{ fontWeight:'800', color:'#6b21a8', marginBottom:'7px', fontSize:'13px' }}>Q: {faq.question ?? faq.q ?? ''}</div>
+                <div style={{ color:'#7c3aed', fontSize:'13px', lineHeight:1.6, paddingLeft:'16px' }}>{faq.answer ?? faq.a ?? ''}</div>
+              </div>
+            ))}
+          </div>
+        </InfoSection>
+      )}
+
+      {/* ── Raw text fallback ── */}
+      {rawText && courses.length === 0 && modules.length === 0 && (
+        <InfoSection title="Extracted Text" icon={<FileText size={18}/>} color="#64748b">
+          <pre style={{ margin:0, fontSize:'13px', color:'#475569', lineHeight:1.7, whiteSpace:'pre-wrap', fontFamily:'inherit' }}>{rawText}</pre>
+        </InfoSection>
+      )}
+    </motion.div>
+  );
+};
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { 
@@ -681,9 +921,11 @@ function UploadDocuments({
   const fetchDocuments = async () => {
     try {
       const response = await api.get('/api/knowledge-base/documents');
-      if (response.success || Array.isArray(response)) {
-        setDocuments(Array.isArray(response) ? response : response.data || []);
-      }
+      // Handle wrapped { success, data: [...] } or flat array
+      const docs = Array.isArray(response) ? response
+        : Array.isArray(response?.data) ? response.data
+        : [];
+      setDocuments(docs);
     } catch (err) {
       console.error('Failed to fetch documents:', err);
     }
@@ -692,31 +934,36 @@ function UploadDocuments({
   const uploadKnowledgeFile = async (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    
     setLoading(true);
     try {
       const response = await api.post('/api/knowledge-base/upload', formData, true);
-      if (response.success) {
-        showToast('Neural extraction complete', 'success');
-        const report = typeof response.data.aiReport === 'string' 
-          ? JSON.parse(response.data.aiReport) 
-          : response.data.aiReport;
-        
-        if (report.status === 'error') {
-          showToast('Analysis Warning: AI extraction failed. Opening Manual Correction mode.', 'warning');
-          setReportData(report);
-          setCurrentDocId(response.data.id);
-          setIsEditing(true);
-        } else {
-          setReportData(report);
-          setCurrentDocId(response.data.id);
-          setActiveSection('full-report');
-          
-          // Trigger Mistral Analysis for deeper insights
-          triggerMistralAnalysis(report);
-        }
-        fetchDocuments();
+
+      // ── Robustly extract the AI report from any response shape ──
+      const payload = (response?.success && response?.data) ? response.data : response;
+      const docId   = payload?.id ?? payload?.document_id ?? null;
+
+      // Report may live under various keys
+      let rawReport = payload?.aiReport ?? payload?.ai_report
+        ?? payload?.knowledge_data ?? payload?.report ?? payload;
+
+      // If it's a JSON string, parse it
+      if (typeof rawReport === 'string') {
+        try { rawReport = JSON.parse(rawReport); } catch { rawReport = { raw_text: rawReport }; }
       }
+
+      showToast('Brochure extracted successfully!', 'success');
+      setCurrentDocId(docId);
+
+      if (rawReport?.status === 'error' || !rawReport || Object.keys(rawReport).length === 0) {
+        showToast('AI extraction incomplete — opening manual editor.', 'warning');
+        setReportData(rawReport || {});
+        setIsEditing(true);
+      } else {
+        setReportData(rawReport);
+        setActiveSection('full-report');
+        triggerMistralAnalysis(rawReport);
+      }
+      fetchDocuments();
     } catch (err) {
       showToast(err.message || 'Upload failed', 'error');
     } finally {
