@@ -10,7 +10,7 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
   const { pathname } = request.nextUrl;
 
-  // All protected paths (mirrors the navGroups in layout.tsx)
+  // All protected paths
   const protectedPaths = [
     '/dashboard',
     '/leads',
@@ -33,12 +33,14 @@ export function middleware(request: NextRequest) {
 
   // Redirect unauthenticated users away from protected pages
   if (isProtected && !token) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    const loginUrl = new URL('/login', request.url);
+    return NextResponse.redirect(loginUrl);
   }
 
   // Redirect already-authenticated users away from login/signup
   if ((isLoginPage || isSignupPage) && token) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    const dashboardUrl = new URL('/dashboard', request.url);
+    return NextResponse.redirect(dashboardUrl);
   }
 
   return NextResponse.next();

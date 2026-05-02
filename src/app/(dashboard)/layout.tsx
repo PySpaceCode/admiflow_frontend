@@ -48,15 +48,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
-      router.push('/login');
+      window.location.href = '/login';
       return;
     }
-    
+
+    // Re-hydrate cookie in case browser cleared it (prevents middleware redirect loop)
+    const cookieExists = document.cookie.split(';').some(c => c.trim().startsWith('auth_token='));
+    if (!cookieExists) {
+      document.cookie = `auth_token=${token}; path=/; max-age=86400; SameSite=Lax`;
+    }
+
     const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
     setUser(storedUser);
-    if (storedUser?.full_name) setInstituteName(storedUser.full_name);
+    // full_name may be empty if backend didn't return it — fall back to email or default
+    const displayName = storedUser?.full_name || storedUser?.email || 'Admission AI';
+    setInstituteName(displayName);
     setIsAuthChecking(false);
-  }, [router]);
+  }, []);
 
   if (isAuthChecking) {
     return (

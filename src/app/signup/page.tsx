@@ -23,11 +23,13 @@ export default function SignupPage() {
 
   // Redirect if already logged in
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
-      router.push('/dashboard');
+      // Re-hydrate cookie in case it expired
+      document.cookie = `auth_token=${token}; path=/; max-age=86400; SameSite=Lax`;
+      window.location.href = "/dashboard";
     }
-  }, [router]);
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -45,13 +47,7 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      console.log("[Signup] Sending request to /api/register", {
-        ...formData,
-        password: "***",
-      });
-
-      // POST /api/register
-      // Backend returns: { success: true/false, message: "...", data: { userId, email } }
+      // POST /api/auth/register
       const response = await api.post("/api/auth/register", {
         fullName: formData.fullName.trim(),
         instituteName: formData.instituteName.trim(),
@@ -62,7 +58,7 @@ export default function SignupPage() {
       console.log("[Signup] Response:", response);
 
       if (response.success) {
-        showToast(response.message || "Account created successfully!", "success");
+        showToast(response.message || "Account created! Please sign in.", "success");
         setTimeout(() => {
           router.push("/login");
         }, 1500);
@@ -71,10 +67,7 @@ export default function SignupPage() {
       }
     } catch (error: any) {
       console.error("[Signup] Error:", error);
-      showToast(
-        error.message || "An unexpected error occurred. Please try again.",
-        "error"
-      );
+      showToast(error.message || "An unexpected error occurred. Please try again.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +91,7 @@ export default function SignupPage() {
         </Link>
       </div>
 
-      {/* Left Section - Graphic / Copy */}
+      {/* Left Section - Graphic */}
       <div className="hidden lg:flex w-1/2 flex-col justify-center relative items-center p-12 overflow-hidden bg-background border-r border-border/50">
         <div className="absolute inset-0 z-0">
           <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-[var(--color-brand-blue)]/10 to-[var(--color-brand-cyan)]/10 blur-[130px]" />
@@ -179,12 +172,9 @@ export default function SignupPage() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[var(--color-brand-cyan)]/10 to-transparent -z-10" />
 
             <form onSubmit={handleSignup} className="space-y-4">
-
               {/* Full Name */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80 pl-1 block">
-                  Full Name
-                </label>
+                <label className="text-sm font-medium text-foreground/80 pl-1 block">Full Name</label>
                 <input
                   type="text"
                   name="fullName"
@@ -199,9 +189,7 @@ export default function SignupPage() {
 
               {/* Institute Name */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80 pl-1 block">
-                  Institute Name
-                </label>
+                <label className="text-sm font-medium text-foreground/80 pl-1 block">Institute Name</label>
                 <input
                   type="text"
                   name="instituteName"
@@ -216,9 +204,7 @@ export default function SignupPage() {
 
               {/* Email */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80 pl-1 block">
-                  Email
-                </label>
+                <label className="text-sm font-medium text-foreground/80 pl-1 block">Email</label>
                 <input
                   type="email"
                   name="email"
@@ -233,9 +219,7 @@ export default function SignupPage() {
 
               {/* Password */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80 pl-1 block">
-                  Password
-                </label>
+                <label className="text-sm font-medium text-foreground/80 pl-1 block">Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -254,11 +238,7 @@ export default function SignupPage() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     tabIndex={-1}
                   >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
@@ -295,13 +275,9 @@ export default function SignupPage() {
           <div className="mt-6 text-center px-4">
             <p className="text-xs text-muted-foreground/80">
               By creating an account, you agree to the{" "}
-              <Link href="#" className="underline hover:text-foreground">
-                Terms of Service
-              </Link>{" "}
+              <Link href="#" className="underline hover:text-foreground">Terms of Service</Link>{" "}
               and{" "}
-              <Link href="#" className="underline hover:text-foreground">
-                Privacy Policy
-              </Link>
+              <Link href="#" className="underline hover:text-foreground">Privacy Policy</Link>
             </p>
           </div>
         </motion.div>

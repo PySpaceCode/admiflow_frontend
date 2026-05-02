@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Sparkles, ArrowRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ThemeToggle } from "@/components/ThemeToggle"; 
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { api } from "@/lib/api";
 import { showToast } from "@/lib/toast";
 
@@ -21,11 +21,11 @@ export default function LoginPage() {
 
   // Redirect if already logged in
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
-      router.push('/dashboard');
+      window.location.href = "/dashboard";
     }
-  }, [router]);
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -37,7 +37,8 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // POST /api/login → { success, message, data: { access_token, refresh_token, user } }
+      // POST /api/auth/login
+      // Backend returns: { success, message, data: { access_token, refresh_token, user: { id, role } } }
       const response = await api.post("/api/auth/login", {
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
@@ -46,23 +47,43 @@ export default function LoginPage() {
       console.log("Login Response:", response);
 
       if (response.success) {
-        localStorage.setItem("token", response.data.access_token);
-        // Also set cookie for middleware protection
-        document.cookie = `auth_token=${response.data.access_token}; path=/; max-age=86400; SameSite=Lax`;
+        const token = response.data?.access_token;
+        if (!token) {
+          showToast("Login failed: no token received", "error");
+          return;
+        }
 
-        if (response.data.refresh_token) {
+        // Store token in localStorage
+        localStorage.setItem("token", token);
+
+        // Set cookie for middleware auth guard (24 hour expiry)
+        document.cookie = `auth_token=${token}; path=/; max-age=86400; SameSite=Lax`;
+
+        // Store refresh token if present
+        if (response.data?.refresh_token) {
           localStorage.setItem("refresh_token", response.data.refresh_token);
         }
-        if (response.data.user) {
-          localStorage.setItem("user", JSON.stringify(response.data.user));
-        }
-        showToast("Login successful!", "success");
-        // Use full navigation so the middleware can read the auth_token cookie
-        setTimeout(() => { window.location.href = '/dashboard'; }, 500);
+
+        // Store user data — backend only gives id & role, so we enrich with email from form
+        const userFromBackend = response.data?.user || {};
+        const enrichedUser = {
+          ...userFromBackend,
+          email: formData.email.trim().toLowerCase(),
+          full_name: userFromBackend.full_name || "",
+        };
+        localStorage.setItem("user", JSON.stringify(enrichedUser));
+
+        showToast("Login successful! Redirecting…", "success");
+
+        // Use full page navigation so middleware reads the newly set cookie
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 600);
       } else {
         showToast(response.message || "Invalid credentials", "error");
       }
     } catch (error: any) {
+      console.error("[Login] Error:", error);
       showToast(error.message || "An unexpected error occurred", "error");
     } finally {
       setIsLoading(false);
@@ -75,10 +96,13 @@ export default function LoginPage() {
       <div className="absolute top-6 right-6 z-50">
         <ThemeToggle />
       </div>
-      
+
       {/* Back to home */}
       <div className="absolute top-6 left-6 z-50 lg:hidden">
-        <Link href="/" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+        <Link
+          href="/"
+          className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Link>
@@ -86,10 +110,9 @@ export default function LoginPage() {
 
       {/* Left Section - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background lg:bg-card/30 border-r border-border/50 relative overflow-hidden">
-        {/* Subtle light/dark background element for form side */}
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[var(--color-brand-cyan)]/5 blur-[120px] pointer-events-none" />
-        
-        <motion.div 
+
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
@@ -111,9 +134,8 @@ export default function LoginPage() {
           </div>
 
           <div className="bg-card/80 backdrop-blur-xl p-8 rounded-3xl border border-border/60 shadow-2xl relative overflow-hidden">
-            {/* Subtle inner card glow */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[var(--color-brand-blue)]/10 to-transparent -z-10" />
-            
+
             <form onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground/80 pl-1 block">Email</label>
@@ -132,7 +154,10 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between pl-1 pr-1">
                   <label className="text-sm font-medium text-foreground/80">Password</label>
-                  <Link href="/forgot-password" className="text-xs font-semibold text-[var(--color-brand-blue)] hover:text-[var(--color-brand-cyan)] transition-colors">
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs font-semibold text-[var(--color-brand-blue)] hover:text-[var(--color-brand-cyan)] transition-colors"
+                  >
                     Forgot Password?
                   </Link>
                 </div>
@@ -143,6 +168,7 @@ export default function LoginPage() {
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder="••••••••"
+                    autoComplete="current-password"
                     className="w-full px-4 py-3 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
                     required
                   />
@@ -152,11 +178,7 @@ export default function LoginPage() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     tabIndex={-1}
                   >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
@@ -188,8 +210,11 @@ export default function LoginPage() {
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Don't have an account?{" "}
-                <Link href="/signup" className="text-[var(--color-brand-blue)] hover:text-[var(--color-brand-cyan)] font-semibold transition-colors">
+                Don&apos;t have an account?{" "}
+                <Link
+                  href="/signup"
+                  className="text-[var(--color-brand-blue)] hover:text-[var(--color-brand-cyan)] font-semibold transition-colors"
+                >
                   Create Account
                 </Link>
               </p>
@@ -198,28 +223,26 @@ export default function LoginPage() {
         </motion.div>
       </div>
 
-      {/* Right Section - Graphic / Copy (Mirrored) */}
+      {/* Right Section - Graphic */}
       <div className="hidden lg:flex w-1/2 flex-col justify-center relative items-center p-12 overflow-hidden bg-background">
         <div className="absolute inset-0 z-0">
           <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-[var(--color-brand-cyan)]/10 to-[var(--color-brand-blue)]/10 blur-[120px]" />
           <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-[var(--color-brand-purple)]/10 blur-[100px]" />
         </div>
-        
+
         <div className="z-10 flex flex-col items-center justify-center max-w-lg text-center">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, type: "spring" }}
             className="relative"
           >
-            {/* Pulsing rings behind mascot */}
-            <motion.div 
+            <motion.div
               animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }}
               transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
               className="absolute inset-0 rounded-full bg-gradient-to-tr from-[var(--color-brand-purple)] to-[var(--color-brand-cyan)] blur-2xl -z-20 opacity-30 dark:opacity-40"
             />
-            
-            <motion.div 
+            <motion.div
               animate={{ y: [0, -12, 0] }}
               transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
               className="relative w-80 h-80 mb-10 rounded-full p-2 bg-gradient-to-b from-[var(--color-brand-cyan)]/30 to-transparent shadow-[0_0_80px_rgba(0,194,255,0.15)] border border-[var(--color-brand-cyan)]/40 backdrop-blur-xl overflow-hidden flex items-center justify-center"
