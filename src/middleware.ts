@@ -6,7 +6,7 @@ import type { NextRequest } from 'next/server';
  * Reads the `auth_token` cookie set on login.
  * Protects every route under the (dashboard) group.
  */
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
   const { pathname } = request.nextUrl;
 

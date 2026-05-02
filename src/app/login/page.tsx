@@ -57,7 +57,8 @@ export default function LoginPage() {
           localStorage.setItem("user", JSON.stringify(response.data.user));
         }
         showToast("Login successful!", "success");
-        router.push("/dashboard");
+        // Use full navigation so the middleware can read the auth_token cookie
+        setTimeout(() => { window.location.href = '/dashboard'; }, 500);
       } else {
         showToast(response.message || "Invalid credentials", "error");
       }
