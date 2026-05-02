@@ -2,8 +2,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { showToast } from '@/lib/toast';
-import { api } from '@/lib/api';
-import { useEffect } from 'react';
 
 // ── OTP Verify Button ───────────────────────────────────────
 function OtpButton({ id, sent, loading, onSend, onVerify }) {
@@ -53,7 +51,6 @@ export default function Onboarding() {
 
   // Core fields
   const [form, setForm] = useState({
-    fullName: '',
     instituteName: '',
     instituteType: '',
     email: '',
@@ -65,16 +62,6 @@ export default function Onboarding() {
     facebook: '',
     twitter: '',
   });
-
-  // Pre-fill from stored user if available
-  useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-    setForm(prev => ({
-      ...prev,
-      fullName: storedUser.full_name || '',
-      email: storedUser.email || prev.email,
-    }));
-  }, []);
 
   // OTP states
   const [emailOtp, setEmailOtp] = useState({ sent: false, loading: false, verified: false });
@@ -121,64 +108,16 @@ export default function Onboarding() {
       showToast('Institute name is required', 'error');
       return;
     }
-    if (!form.fullName.trim()) {
-      showToast('Full name is required', 'error');
-      return;
-    }
-
     setSaving(true);
-    try {
-      const payload = {
-        fullName: form.fullName,
-        email: form.email,
-        instituteName: form.instituteName,
-        instituteType: form.instituteType || null,
-        cityAddress: form.city || null,
-        websiteUrl: form.website || null,
-        phone: form.phone || null,
-        emailVerification: emailOtp.verified ? "verified" : null,
-        phoneVerification: phoneOtp.verified ? "verified" : null,
-        socialMediaLinks: {
-          fb: form.facebook || null,
-          ig: form.instagram || null,
-          linkedin: form.linkedin || null,
-          x: form.twitter || null
-        }
-      };
-
-      const response = await api.post('/api/onboarding/setup', payload);
-      
-      if (response.success) {
-        showToast('Onboarding setup completes', 'success');
-        // Update local user data if changed
-        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-        localStorage.setItem('user', JSON.stringify({ 
-          ...storedUser, 
-          full_name: form.fullName,
-          onboarding_completed: true 
-        }));
-        
-        setTimeout(() => router.push('/knowledge-base'), 1500);
-      } else {
-        showToast(response.message || 'Failed to save onboarding details', 'error');
-      }
-    } catch (error) {
-      showToast(error.message || 'An error occurred during onboarding', 'error');
-    } finally {
-      setSaving(false);
-    }
+    await new Promise(r => setTimeout(r, 1000)); // Simulate API delay
+    showToast('Account profile saved ✓', 'success');
+    setSaving(false);
+    setTimeout(() => router.push('/knowledge-base'), 800);
   }
 
   const instituteTypes = [
-    'Engineering College',
-    'Medical College',
-    'Arts & Science College',
-    'MBA / Management Institute',
-    'Coaching Centre',
-    'School (K-12)',
-    'Polytechnic / Vocational',
-    'University',
-    'Other',
+    'School',
+    'Coaching / Academy / Institute',
   ];
 
   // ── Badge helper ─────────────
@@ -211,19 +150,6 @@ export default function Onboarding() {
           </h2>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            {/* Full Name */}
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label" htmlFor="fullName">Full Name *</label>
-              <input
-                id="fullName"
-                className="input-field"
-                placeholder="e.g. John Doe"
-                value={form.fullName}
-                onChange={set('fullName')}
-                required
-              />
-            </div>
-
             {/* Institute Name */}
             <div className="form-group" style={{ margin: 0 }}>
               <label className="form-label" htmlFor="instituteName">Institute Name *</label>
@@ -240,38 +166,19 @@ export default function Onboarding() {
             {/* Institute Type */}
             <div className="form-group" style={{ margin: 0 }}>
               <label className="form-label" htmlFor="instituteType">Institute Type *</label>
-              <div style={{ position: 'relative' }}>
-                <select
-                  id="instituteType"
-                  className="input-field"
-                  value={form.instituteType}
-                  onChange={set('instituteType')}
-                  style={{ 
-                    cursor: 'pointer', 
-                    appearance: 'none',
-                    paddingRight: '40px' 
-                  }}
-                  required
-                >
-                  <option value="" disabled>Select type…</option>
-                  {instituteTypes.map(t => (
-                    <option key={t} value={t} style={{ background: 'var(--color-surface-lowest)', color: 'var(--color-on-surface)' }}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-                <div style={{ 
-                  position: 'absolute', 
-                  right: '15px', 
-                  top: '50%', 
-                  transform: 'translateY(-50%)', 
-                  pointerEvents: 'none',
-                  color: 'var(--color-on-surface-variant)',
-                  fontSize: '12px'
-                }}>
-                  ▼
-                </div>
-              </div>
+              <select
+                id="instituteType"
+                className="input-field"
+                value={form.instituteType}
+                onChange={set('instituteType')}
+                style={{ cursor: 'pointer', appearance: 'auto' }}
+                required
+              >
+                <option value="">Select type…</option>
+                {instituteTypes.map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
             </div>
 
             {/* City / Region */}

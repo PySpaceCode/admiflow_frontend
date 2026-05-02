@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import ToastContainer from '@/components/dashboard/ToastContainer';
 import { showToast } from '@/lib/toast';
-import { api } from '@/lib/api';
 
 import './dashboard.css';
 
@@ -43,40 +42,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // We handle the dark class scoping via CSS now
   }, [isDarkTheme]);
 
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
-
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    
     const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
     setUser(storedUser);
     if (storedUser?.full_name) setInstituteName(storedUser.full_name);
-    setIsAuthChecking(false);
-  }, [router]);
-
-  if (isAuthChecking) {
-    return (
-      <div style={{ 
-        height: '100vh', width: '100vw', display: 'flex', 
-        alignItems: 'center', justifyContent: 'center', 
-        background: 'var(--color-background)', color: 'var(--color-primary)' 
-      }}>
-        <div className="animate-spin" style={{ 
-          width: '40px', height: '40px', border: '4px solid currentColor', 
-          borderTopColor: 'transparent', borderRadius: '50%' 
-        }} />
-      </div>
-    );
-  }
+  }, []);
 
   async function handleLogout() {
-    await api.logout();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     showToast('Logged out successfully', 'success');
-    router.push('/login');
+    router.push('/login'); // Assuming the auth route in Next.js is /login
   }
 
   const navGroups = [
