@@ -1,0 +1,49 @@
+﻿python : C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:383: 
+UserWarning: Valid config keys have changed in V2:
+At line:1 char:1
++ python -c "import traceback; from fastapi import FastAPI; from fastap ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\HP\App... changed in V2::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+* 'orm_mode' has been renamed to 'from_attributes'
+  warnings.warn(message, UserWarning)
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "D:\admitflow\admitflow\backend\app\main.py", line 108, in <module>
+    from app.api.routers import auth, onboarding, leads, knowledge_base
+  File "D:\admitflow\admitflow\backend\app\api\routers\knowledge_base.py", line 8, in <module>
+    from app.models.script import Script
+  File "D:\admitflow\admitflow\backend\app\models\script.py", line 7, in <module>
+    class Script(Base):
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\decl_api.py", line 198, 
+in __init__
+    _as_declarative(reg, cls, dict_)
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\decl_base.py", line 244, 
+in _as_declarative
+    return _MapperConfig.setup_mapping(registry, cls, dict_, None, {})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\decl_base.py", line 325, 
+in setup_mapping
+    return _ClassScanMapperConfig(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\decl_base.py", line 576, 
+in __init__
+    self._setup_table(table)
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\decl_base.py", line 1755, 
+in _setup_table
+    table_cls(
+  File "<string>", line 2, in __new__
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\deprecations.py", line 
+281, in warned
+    return fn(*args, **kwargs)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\schema.py", line 429, in 
+__new__
+    return cls._new(*args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\schema.py", line 461, in 
+_new
+    raise exc.InvalidRequestError(
+sqlalchemy.exc.InvalidRequestError: Table 'scripts' is already defined for this MetaData instance.  Specify 
+'extend_existing=True' to redefine options and columns on an existing Table object.
