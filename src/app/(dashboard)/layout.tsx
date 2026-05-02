@@ -58,7 +58,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       document.cookie = `auth_token=${token}; path=/; max-age=86400; SameSite=Lax`;
     }
 
-    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    let storedUser = {};
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr && userStr !== 'undefined') {
+        storedUser = JSON.parse(userStr);
+      }
+    } catch (e) {
+      console.error('Failed to parse user from localStorage:', e);
+    }
+    
     setUser(storedUser);
     // full_name may be empty if backend didn't return it — fall back to email or default
     const displayName = storedUser?.full_name || storedUser?.email || 'Admission AI';
