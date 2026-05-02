@@ -27,7 +27,6 @@ export default function Dashboard() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    setRetrying(false);
     try {
       const res = await api.get('/api/dashboard/stats');
       // Accept both { success, data: {...} } and flat {...}
@@ -37,6 +36,7 @@ export default function Dashboard() {
       setError(err?.message || 'Failed to load');
     } finally {
       setLoading(false);
+      setRetrying(false);
     }
   }, []);
 
@@ -97,10 +97,10 @@ export default function Dashboard() {
   const chartData    = Array.isArray(data?.chartData)  ? data.chartData
                      : Array.isArray(data?.chart_data) ? data.chart_data : [];
 
-  const totalLeads   = stats?.total_leads     ?? stats?.totalLeads     ?? stats?.leads      ?? 0;
-  const callsMade    = stats?.calls_made      ?? stats?.callsMade      ?? stats?.calls      ?? 0;
-  const bookingCount = stats?.bookings        ?? stats?.bookings_count ?? stats?.total_bookings ?? 0;
-  const cvRate       = stats?.conversion_rate ?? stats?.conversionRate ?? stats?.conversion ?? null;
+  const totalLeads   = stats?.total_leads     ?? stats?.totalLeads     ?? stats?.leads      ?? stats?.leads_count ?? 0;
+  const callsMade    = stats?.calls_made      ?? stats?.callsMade      ?? stats?.calls      ?? stats?.calls_count ?? 0;
+  const bookingCount = stats?.bookings        ?? stats?.bookings_count ?? stats?.total_bookings ?? stats?.totalBookings ?? 0;
+  const cvRate       = stats?.conversion_rate ?? stats?.conversionRate ?? stats?.conversion ?? stats?.cv_rate ?? null;
   const cvDisplay    = cvRate == null ? '—'
     : typeof cvRate === 'number' ? `${cvRate.toFixed(1)}%` : cvRate;
 

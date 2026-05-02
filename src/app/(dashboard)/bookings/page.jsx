@@ -13,7 +13,7 @@ export default function Bookings() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -50,12 +50,13 @@ export default function Bookings() {
       showToast(err.message, 'error');
     } finally {
       setLoading(false);
+      setRetrying(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const handleBookingClick = (booking) => {
     setSelectedBooking(booking);
