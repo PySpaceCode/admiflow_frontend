@@ -2,10 +2,10 @@
 import { useState, useEffect } from 'react';
 
 export default function ToastContainer() {
-  const [toasts, setToasts] = useState([]);
+  const [toasts, setToasts] = useState<any[]>([]);
 
   useEffect(() => {
-    function handleToast(e) {
+    function handleToast(e: any) {
       const id = Date.now();
       const { message, type } = e.detail;
       setToasts(prev => [...prev, { id, message, type }]);
@@ -36,7 +36,8 @@ export default function ToastContainer() {
       gap: '10px',
     }}>
       {toasts.map(toast => {
-        const c = colors[toast.type] || colors.info;
+        const c = (colors as any)[toast.type] || colors.info;
+        const icon = (icons as any)[toast.type] || icons.info;
         return (
           <div key={toast.id} style={{
             display: 'flex',
@@ -54,7 +55,7 @@ export default function ToastContainer() {
             maxWidth: '380px',
             animation: 'slideIn 0.2s ease',
           }}>
-            <span>{icons[toast.type]}</span>
+            <span>{icon}</span>
             <span>{toast.message}</span>
           </div>
         );
