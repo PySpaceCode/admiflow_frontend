@@ -45,7 +45,13 @@ import {
   Award
 } from 'lucide-react';
 
-const KnowledgeEditor = ({ data, onSave, onCancel }) => {
+interface KnowledgeEditorProps {
+  data: any;
+  onSave: (data: any) => void;
+  onCancel: () => void;
+}
+
+const KnowledgeEditor = ({ data, onSave, onCancel }: KnowledgeEditorProps) => {
   const [jsonText, setJsonText] = useState(JSON.stringify(data, null, 2));
   const [error, setError] = useState(null);
 
@@ -209,7 +215,11 @@ const KnowledgeEditor = ({ data, onSave, onCancel }) => {
   );
 };
 
-const KnowledgeReportView = ({ data }) => {
+interface KnowledgeReportViewProps {
+  data: any;
+}
+
+const KnowledgeReportView = ({ data }: KnowledgeReportViewProps) => {
   if (!data) return null;
 
   const containerVariants = {
@@ -446,7 +456,13 @@ const KnowledgeReportView = ({ data }) => {
   );
 };
 
-const SectionTitle = ({ title, icon, color = '#6366f1' }) => (
+interface SectionTitleProps {
+  title: string;
+  icon: React.ReactNode;
+  color?: string;
+}
+
+const SectionTitle = ({ title, icon, color = '#6366f1' }: SectionTitleProps) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
     <div style={{ 
       width: '48px', height: '48px', borderRadius: '16px', 
@@ -460,7 +476,15 @@ const SectionTitle = ({ title, icon, color = '#6366f1' }) => (
   </div>
 );
 
-const StatCard = ({ label, value, icon, trend, color }) => (
+interface StatCardProps {
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+  trend?: string;
+  color: string;
+}
+
+const StatCard = ({ label, value, icon, trend, color }: StatCardProps) => (
   <motion.div 
     whileHover={{ y: -5, boxShadow: '0 20px 40px -15px rgba(0,0,0,0.1)' }}
     className="card" 
@@ -586,6 +610,12 @@ export default function KnowledgeBase() {
                 setReportData={setReportData}
                 documents={documents}
                 setDocuments={setDocuments}
+                setMistralLoading={setMistralLoading}
+                setMistralAnalysis={setMistralAnalysis}
+                setMistralStats={setMistralStats}
+                mistralLoading={mistralLoading}
+                mistralAnalysis={mistralAnalysis}
+                mistralStats={mistralStats}
               />
             )}
             {activeTab === 'ai-tone-persona' && (
@@ -612,7 +642,31 @@ export default function KnowledgeBase() {
   );
 }
 
-function UploadDocuments({ reportData, setReportData, documents, setDocuments }) {
+interface UploadDocumentsProps {
+  reportData: any;
+  setReportData: (data: any) => void;
+  documents: any[];
+  setDocuments: (docs: any[]) => void;
+  setMistralLoading: (loading: boolean) => void;
+  setMistralAnalysis: (analysis: string) => void;
+  setMistralStats: (stats: any) => void;
+  mistralLoading: boolean;
+  mistralAnalysis: string;
+  mistralStats: any;
+}
+
+function UploadDocuments({ 
+  reportData, 
+  setReportData, 
+  documents, 
+  setDocuments,
+  setMistralLoading,
+  setMistralAnalysis,
+  setMistralStats,
+  mistralLoading,
+  mistralAnalysis,
+  mistralStats
+}: UploadDocumentsProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
@@ -720,7 +774,7 @@ function UploadDocuments({ reportData, setReportData, documents, setDocuments })
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, cubicBezier: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="card"
           style={{
             border: isDragOver ? '2px dashed #6366f1' : '2px dashed #cbd5e1',
@@ -1453,7 +1507,12 @@ function UploadDocuments({ reportData, setReportData, documents, setDocuments })
   );
 }
 
-function AITonePersona({ formData, setFormData }) {
+interface AITonePersonaProps {
+  formData: any;
+  setFormData: (data: any | ((prev: any) => any)) => void;
+}
+
+function AITonePersona({ formData, setFormData }: AITonePersonaProps) {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -1636,7 +1695,17 @@ function AITonePersona({ formData, setFormData }) {
   );
 }
 
-function PitchScript({ intents, setIntents, rules, setRules, scriptControl, setScriptControl, reportData }) {
+interface PitchScriptProps {
+  intents: any[];
+  setIntents: (intents: any[]) => void;
+  rules: any[];
+  setRules: (rules: any[]) => void;
+  scriptControl: any;
+  setScriptControl: (control: any) => void;
+  reportData: any;
+}
+
+function PitchScript({ intents, setIntents, rules, setRules, scriptControl, setScriptControl, reportData }: PitchScriptProps) {
   const [activeSubSection, setActiveSubSection] = useState('brain');
   const [previewPrompt, setPreviewPrompt] = useState("");
   const [loading, setLoading] = useState(false);
