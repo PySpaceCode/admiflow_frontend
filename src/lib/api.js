@@ -105,7 +105,7 @@ export const api = {
   delete: (path) => request('DELETE', path),
   logout: async () => {
     try {
-      await request('POST', '/api/logout');
+      await request('POST', '/api/auth/logout');
     } catch (err) {
       console.warn('[API] Logout request failed:', err);
     } finally {

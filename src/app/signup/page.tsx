@@ -52,7 +52,7 @@ export default function SignupPage() {
 
       // POST /api/register
       // Backend returns: { success: true/false, message: "...", data: { userId, email } }
-      const response = await api.post("/api/register", {
+      const response = await api.post("/api/auth/register", {
         fullName: formData.fullName.trim(),
         instituteName: formData.instituteName.trim(),
         email: formData.email.trim().toLowerCase(),
