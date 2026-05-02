@@ -31,7 +31,7 @@ export default function Leads() {
   async function fetchLeads() {
     setLoading(true);
     try {
-      const response = await api.get('/api/leads');
+      const response = await api.get('/api/leads/');
       if (response.success || Array.isArray(response)) {
         // Handle both wrapped and unwrapped responses
         setLeads(Array.isArray(response) ? response : response.data || []);
@@ -49,7 +49,7 @@ export default function Leads() {
     
     setLoading(true);
     try {
-      const response = await api.post('/api/upload-csv', formData, true);
+      const response = await api.post('/api/leads/upload-csv', formData, true);
       if (response.success) {
         showToast(response.message, 'success');
         fetchLeads(); // Refresh table
@@ -131,7 +131,7 @@ export default function Leads() {
         fallbackPhone: config.fallbackPhone
       };
       
-      const response = await api.post('/api/campaign/launch', payload);
+      const response = await api.post('/api/leads/campaign/launch', payload);
       if (response.success) {
         showToast('Agent configuration saved and launched!', 'success');
         setTimeout(() => {

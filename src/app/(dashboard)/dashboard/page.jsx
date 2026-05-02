@@ -29,7 +29,7 @@ export default function Dashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/api/stats');
+      const response = await api.get('/api/dashboard/stats');
       if (response.success) {
         const { stats: statsData, activity: activityData, bookings: bookingsData, chartData: chartRes } = response.data;
         

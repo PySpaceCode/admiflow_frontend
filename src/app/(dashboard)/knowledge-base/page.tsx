@@ -680,7 +680,7 @@ function UploadDocuments({
 
   const fetchDocuments = async () => {
     try {
-      const response = await api.get('/api/documents');
+      const response = await api.get('/api/knowledge-base/documents');
       if (response.success || Array.isArray(response)) {
         setDocuments(Array.isArray(response) ? response : response.data || []);
       }
@@ -695,7 +695,7 @@ function UploadDocuments({
     
     setLoading(true);
     try {
-      const response = await api.post('/api/upload', formData, true);
+      const response = await api.post('/api/knowledge-base/upload', formData, true);
       if (response.success) {
         showToast('Neural extraction complete', 'success');
         const report = typeof response.data.aiReport === 'string' 
@@ -752,7 +752,7 @@ function UploadDocuments({
   const deleteDocument = async (id) => {
     if (!confirm('Are you sure you want to delete this repository?')) return;
     try {
-      await api.delete(`/api/documents/${id}`);
+      await api.delete(`/api/knowledge-base/documents/${id}`);
       showToast('Repository purged', 'success');
       fetchDocuments();
     } catch (err) {
@@ -1532,7 +1532,7 @@ function AITonePersona({ formData, setFormData }: AITonePersonaProps) {
         persona_description: formData.personaDescription
       };
       
-      const response = await api.post('/api/persona', payload);
+      const response = await api.post('/api/knowledge-base/persona', payload);
       if (response.success) {
         showToast('Neural identity established', 'success');
       }
@@ -1723,7 +1723,7 @@ function PitchScript({ intents, setIntents, rules, setRules, scriptControl, setS
       const payload = {
         sections: { intents, rules, scriptControl }
       };
-      const response = await api.post('/api/script', payload);
+      const response = await api.post('/api/knowledge-base/script', payload);
       if (response.success) {
         showToast('Conversation architecture synchronized', 'success');
       }

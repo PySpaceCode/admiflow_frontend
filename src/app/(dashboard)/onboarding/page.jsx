@@ -131,22 +131,10 @@ export default function Onboarding() {
       const payload = {
         fullName: form.fullName,
         email: form.email,
-        instituteName: form.instituteName,
-        instituteType: form.instituteType || null,
-        cityAddress: form.city || null,
-        websiteUrl: form.website || null,
-        phone: form.phone || null,
-        emailVerification: emailOtp.verified ? "verified" : null,
-        phoneVerification: phoneOtp.verified ? "verified" : null,
-        socialMediaLinks: {
-          fb: form.facebook || null,
-          ig: form.instagram || null,
-          linkedin: form.linkedin || null,
-          x: form.twitter || null
-        }
+        instituteName: form.instituteName
       };
 
-      const response = await api.post('/api/setup', payload);
+      const response = await api.post('/api/onboarding/setup', payload);
       
       if (response.success) {
         showToast('Onboarding setup completes', 'success');

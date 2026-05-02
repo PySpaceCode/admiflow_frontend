@@ -15,7 +15,7 @@ export default function Bookings() {
     setLoading(true);
     try {
       // Fetch bookings
-      const bookRes = await api.get('/api/bookings');
+      const bookRes = await api.get('/api/bookings/');
       if (bookRes.success) {
         const mapped = bookRes.data.map(b => {
           const displayDate = b.scheduled_at || b.created_at;
@@ -35,7 +35,7 @@ export default function Bookings() {
       }
 
       // Fetch agents
-      const userRes = await api.get('/api/users');
+      const userRes = await api.get('/api/auth/users');
       if (userRes.success) {
         setAgents([{ id: 0, name: 'Unassigned' }, ...userRes.data]);
       }
@@ -63,7 +63,7 @@ export default function Bookings() {
   const handleStatusChange = async (newStatus) => {
     try {
       const currentAgent = agents.find(a => a.name === selectedBooking.agent);
-      const res = await api.post(`/api/status/${selectedBooking.id}`, {
+      const res = await api.post(`/api/bookings/${selectedBooking.id}/status`, {
         status: newStatus.toLowerCase(),
         agentAssignedId: currentAgent?.id || 0
       });
@@ -80,7 +80,7 @@ export default function Bookings() {
     const agentId = parseInt(e.target.value);
     const agent = agents.find(a => a.id === agentId);
     try {
-      const res = await api.post(`/api/status/${selectedBooking.id}`, {
+      const res = await api.post(`/api/bookings/${selectedBooking.id}/status`, {
         status: selectedBooking.status.toLowerCase(),
         agentAssignedId: agentId
       });
@@ -101,7 +101,7 @@ export default function Bookings() {
       return;
     }
     try {
-      const res = await api.post(`/api/reschedule/${selectedBooking.id}`, {
+      const res = await api.post(`/api/bookings/${selectedBooking.id}/reschedule`, {
         scheduledAt: new Date(rescheduleDate).toISOString()
       });
       if (res.success) {
