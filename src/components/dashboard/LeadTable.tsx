@@ -3,10 +3,26 @@ import React, { useState } from 'react';
 import { api } from '@/lib/api';
 import { showToast } from '@/lib/toast';
 
-export default function LeadTable({ leads, onViewLead, onActionStart, onActionEnd }) {
+interface Lead {
+  id: string | number;
+  name: string;
+  phone: string;
+  course: string;
+  status: string;
+  last_contact?: string;
+}
+
+interface LeadTableProps {
+  leads: Lead[];
+  onViewLead: (lead: Lead) => void;
+  onActionStart?: () => void;
+  onActionEnd?: () => void;
+}
+
+export default function LeadTable({ leads, onViewLead, onActionStart, onActionEnd }: LeadTableProps) {
   const [revealedPhones, setRevealedPhones] = useState(new Set());
 
-  const togglePhone = (leadId) => {
+  const togglePhone = (leadId: string | number) => {
     setRevealedPhones(prev => {
       const newSet = new Set(prev);
       if (newSet.has(leadId)) {
@@ -18,7 +34,7 @@ export default function LeadTable({ leads, onViewLead, onActionStart, onActionEn
     });
   };
 
-  const handleCall = async (lead) => {
+  const handleCall = async (lead: Lead) => {
     onActionStart && onActionStart();
     try {
       await api.post('/api/call/trigger', { leadId: lead.id });
@@ -30,7 +46,7 @@ export default function LeadTable({ leads, onViewLead, onActionStart, onActionEn
     }
   };
 
-  const handleWhatsApp = async (lead) => {
+  const handleWhatsApp = async (lead: Lead) => {
     onActionStart && onActionStart();
     try {
       await api.post('/api/whatsapp/send', { leadId: lead.id });
@@ -42,7 +58,7 @@ export default function LeadTable({ leads, onViewLead, onActionStart, onActionEn
     }
   };
 
-  const getStatusBadgeClass = (status) => {
+  const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'Not Called': return 'badge-neutral';
       case 'Called': return 'badge-primary';
@@ -52,7 +68,7 @@ export default function LeadTable({ leads, onViewLead, onActionStart, onActionEn
     }
   };
 
-  const formatPhone = (phone, isRevealed) => {
+  const formatPhone = (phone: string, isRevealed: boolean) => {
     if (!phone) return '-';
     if (isRevealed) return phone;
     // Masking: assume format +91XXXXXXXXXX
