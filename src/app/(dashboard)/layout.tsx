@@ -74,10 +74,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   async function handleLogout() {
-    await api.logout();
+    try {
+      await api.logout();
+    } catch (_) {
+      // Silently ignore — logout clears local state regardless
+    }
     showToast('Logged out successfully', 'success');
-    router.push('/login');
+    // Use full page navigation so the middleware reads the cleared cookie
+    setTimeout(() => { window.location.href = '/login'; }, 500);
   }
+
 
   const navGroups = [
     {
