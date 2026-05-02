@@ -21,7 +21,7 @@ export default function LeadTable({ leads, onViewLead, onActionStart, onActionEn
   const handleCall = async (lead) => {
     onActionStart && onActionStart();
     try {
-      await api.post('/api/calls/initiate', { lead_id: lead.id });
+      await api.post('/api/call/trigger', { leadId: lead.id });
       showToast(`Calling ${lead.name}...`, 'info');
     } catch (e) {
       showToast(`Failed to initiate call: ${e.message}`, 'error');
@@ -33,7 +33,7 @@ export default function LeadTable({ leads, onViewLead, onActionStart, onActionEn
   const handleWhatsApp = async (lead) => {
     onActionStart && onActionStart();
     try {
-      await api.post('/api/whatsapp/send', { lead_id: lead.id });
+      await api.post('/api/whatsapp/send', { leadId: lead.id });
       showToast(`WhatsApp sent to ${lead.name}`, 'success');
     } catch (e) {
       showToast(`Failed to send WhatsApp: ${e.message}`, 'error');

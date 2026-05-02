@@ -11,7 +11,7 @@ export default function BookingModal({ lead, onClose }) {
   useEffect(() => {
     // Fetch available slots
     setLoading(true);
-    api.get('/api/bookings/slots')
+    api.get('/api/slots')
       .then(data => setSlots(Array.isArray(data) ? data : []))
       .catch((err) => showToast('Failed to load slots: ' + err.message, 'error'))
       .finally(() => setLoading(false));
@@ -20,7 +20,7 @@ export default function BookingModal({ lead, onClose }) {
   const handleConfirm = async () => {
     if (!selectedSlot) return;
     try {
-      await api.post('/api/bookings', { lead_id: lead.id, slot_time: selectedSlot });
+      await api.post('/api/booking', { lead_id: lead.id, slot_time: selectedSlot });
       showToast('Booking confirmed ✓', 'success');
       onClose();
     } catch (err) {

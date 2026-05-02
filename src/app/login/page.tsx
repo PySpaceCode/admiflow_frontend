@@ -3,23 +3,69 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, ArrowRight, ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { Sparkles, ArrowRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ThemeToggle } from "@/components/ThemeToggle"; // Using absolute path alias
+import { ThemeToggle } from "@/components/ThemeToggle"; 
+import { api } from "@/lib/api";
+import { showToast } from "@/lib/toast";
 
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      router.push('/dashboard');
+    }
+  }, [router]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate login request
-    setTimeout(() => {
+
+    try {
+      // POST /api/login → { success, message, data: { access_token, refresh_token, user } }
+      const response = await api.post("/api/login", {
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+      });
+
+      console.log("Login Response:", response);
+
+      if (response.success) {
+        localStorage.setItem("token", response.data.access_token);
+        // Also set cookie for middleware protection
+        document.cookie = `auth_token=${response.data.access_token}; path=/; max-age=86400; SameSite=Lax`;
+
+        if (response.data.refresh_token) {
+          localStorage.setItem("refresh_token", response.data.refresh_token);
+        }
+        if (response.data.user) {
+          localStorage.setItem("user", JSON.stringify(response.data.user));
+        }
+        showToast("Login successful!", "success");
+        router.push("/dashboard");
+      } else {
+        showToast(response.message || "Invalid credentials", "error");
+      }
+    } catch (error: any) {
+      showToast(error.message || "An unexpected error occurred", "error");
+    } finally {
       setIsLoading(false);
-      router.push("/dashboard");
-    }, 1500);
+    }
   };
 
   return (
@@ -72,7 +118,11 @@ export default function LoginPage() {
                 <label className="text-sm font-medium text-foreground/80 pl-1 block">Email</label>
                 <input
                   type="email"
-                  placeholder="Your email address"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="name@institute.edu"
+                  autoComplete="email"
                   className="w-full px-4 py-3 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
                   required
                 />
@@ -85,12 +135,29 @@ export default function LoginPage() {
                     Forgot Password?
                   </Link>
                 </div>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-3 bg-background/50 border border-input text-foreground rounded-xl focus:ring-2 focus:ring-[var(--color-brand-blue)]/50 focus:border-[var(--color-brand-blue)] outline-none transition-all placeholder:text-muted-foreground shadow-sm"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               <button

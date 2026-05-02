@@ -1,23 +1,54 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { showToast } from '@/lib/toast';
+import { api } from '@/lib/api';
 
 export default function Bookings() {
   const [viewMode, setViewMode] = useState('calendar'); // 'calendar' or 'list'
-  
-  // Dummy Bookings Data
-  const [bookings, setBookings] = useState([
-    { id: 1, name: 'Alice Smith', phone: '+1 555-0101', date: '2026-04-18', time: '10:00 AM', status: 'Confirmed', agent: 'Unassigned' },
-    { id: 2, name: 'Bob Johnson', phone: '+1 555-0102', date: '2026-04-18', time: '01:30 PM', status: 'Pending', agent: 'John Doe' },
-    { id: 3, name: 'Charlie Davis', phone: '+1 555-0103', date: '2026-04-19', time: '09:15 AM', status: 'Confirmed', agent: 'Sarah Adams' },
-    { id: 4, name: 'Diana Evans', phone: '+1 555-0104', date: '2026-04-20', time: '11:00 AM', status: 'Pending', agent: 'Unassigned' },
-    { id: 5, name: 'Evan Wright', phone: '+1 555-0105', date: '2026-04-21', time: '03:00 PM', status: 'Confirmed', agent: 'John Doe' }
-  ]);
-
+  const [bookings, setBookings] = useState([]);
+  const [agents, setAgents] = useState([{ id: 0, name: 'Unassigned' }]);
+  const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const agents = ['Unassigned', 'John Doe', 'Sarah Adams', 'Michael Brown'];
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Fetch bookings
+      const bookRes = await api.get('/api/bookings');
+      if (bookRes.success) {
+        const mapped = bookRes.data.map(b => {
+          const displayDate = b.scheduled_at || b.created_at;
+          return {
+            id: b.id,
+            name: b.leadName,
+            phone: b.leadPhone,
+            date: new Date(displayDate).toISOString().split('T')[0],
+            time: new Date(displayDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            status: b.status.charAt(0).toUpperCase() + b.status.slice(1).toLowerCase(),
+            agent: b.agentName,
+            course: b.leadCourse,
+            scheduledAt: b.scheduled_at
+          };
+        });
+        setBookings(mapped);
+      }
+
+      // Fetch agents
+      const userRes = await api.get('/api/users');
+      if (userRes.success) {
+        setAgents([{ id: 0, name: 'Unassigned' }, ...userRes.data]);
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const handleBookingClick = (booking) => {
     setSelectedBooking(booking);
@@ -29,30 +60,97 @@ export default function Bookings() {
     setSelectedBooking(null);
   };
 
-  const handleStatusChange = (newStatus) => {
-    setBookings(prev => prev.map(b => b.id === selectedBooking.id ? { ...b, status: newStatus } : b));
-    showToast(`Booking marked as ${newStatus}`, 'success');
+  const handleStatusChange = async (newStatus) => {
+    try {
+      const currentAgent = agents.find(a => a.name === selectedBooking.agent);
+      const res = await api.post(`/api/status/${selectedBooking.id}`, {
+        status: newStatus.toLowerCase(),
+        agentAssignedId: currentAgent?.id || 0
+      });
+      if (res.success) {
+        setBookings(prev => prev.map(b => b.id === selectedBooking.id ? { ...b, status: newStatus } : b));
+        showToast(`Booking marked as ${newStatus}`, 'success');
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
   };
 
-  const handleAgentChange = (e) => {
-    const newAgent = e.target.value;
-    setBookings(prev => prev.map(b => b.id === selectedBooking.id ? { ...b, agent: newAgent } : b));
-    setSelectedBooking(prev => ({ ...prev, agent: newAgent }));
-    showToast(`Agent assigned: ${newAgent}`, 'success');
+  const handleAgentChange = async (e) => {
+    const agentId = parseInt(e.target.value);
+    const agent = agents.find(a => a.id === agentId);
+    try {
+      const res = await api.post(`/api/status/${selectedBooking.id}`, {
+        status: selectedBooking.status.toLowerCase(),
+        agentAssignedId: agentId
+      });
+      if (res.success) {
+        setBookings(prev => prev.map(b => b.id === selectedBooking.id ? { ...b, agent: agent.name } : b));
+        setSelectedBooking(prev => ({ ...prev, agent: agent.name }));
+        showToast(`Agent assigned: ${agent.name}`, 'success');
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
   };
 
-  // Mock Calendar Layout Generation (Simulating a simple 5-day week for view)
-  const calendarDays = ['2026-04-17', '2026-04-18', '2026-04-19', '2026-04-20', '2026-04-21'];
-  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const handleReschedule = async () => {
+    if (!rescheduleDate) {
+      showToast('Please select a date and time', 'error');
+      return;
+    }
+    try {
+      const res = await api.post(`/api/reschedule/${selectedBooking.id}`, {
+        scheduledAt: new Date(rescheduleDate).toISOString()
+      });
+      if (res.success) {
+        const newDate = new Date(rescheduleDate);
+        setBookings(prev => prev.map(b => b.id === selectedBooking.id ? { 
+          ...b, 
+          date: newDate.toISOString().split('T')[0],
+          time: newDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          scheduledAt: rescheduleDate
+        } : b));
+        setSelectedBooking(prev => ({
+          ...prev,
+          date: newDate.toISOString().split('T')[0],
+          time: newDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          scheduledAt: rescheduleDate
+        }));
+        setRescheduleDate('');
+        // Hide the reschedule box after success
+        if (document.getElementById('reschedule-box')) {
+          document.getElementById('reschedule-box').style.display = 'none';
+        }
+        showToast('Booking rescheduled successfully', 'success');
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  // Mock Calendar Layout Generation
+  const calendarDays = [];
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const today = new Date();
+  for (let i = 0; i < 5; i++) {
+    const d = new Date();
+    d.setDate(today.getDate() + i);
+    calendarDays.push(d.toISOString().split('T')[0]);
+  }
 
   const getStatusColor = (status) => {
     return status === 'Confirmed' ? 'var(--color-success)' : 'var(--color-warning)';
   };
 
   const getStatusBg = (status) => {
-    // Translucent backgrounds that work in both light and dark modes
     return status === 'Confirmed' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)';
   };
+
+  if (loading) {
+    return <div className="skeleton" style={{ height: '400px', width: '100%' }}></div>;
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -97,10 +195,11 @@ export default function Bookings() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
               {calendarDays.map((date, index) => {
                 const dayBookings = bookings.filter(b => b.date === date);
+                const dateObj = new Date(date);
                 return (
                   <div key={date} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <div style={{ paddingBottom: '12px', borderBottom: '2px solid var(--color-surface-high)', textAlign: 'center' }}>
-                      <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--color-on-surface)' }}>{dayNames[index]}</div>
+                      <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--color-on-surface)' }}>{dayNames[dateObj.getDay()]}</div>
                       <div style={{ fontSize: '12px', color: 'var(--color-on-surface-variant)' }}>{date}</div>
                     </div>
                     
@@ -181,7 +280,7 @@ export default function Bookings() {
 
       </div>
 
-      {/* Booking Management Modal / Slide-over Simulation */}
+      {/* Booking Management Modal */}
       {isModalOpen && selectedBooking && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
           <div className="card" style={{ width: '100%', maxWidth: '500px', padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
@@ -216,11 +315,11 @@ export default function Bookings() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '14px', fontWeight: '500', color: 'var(--color-on-surface)' }}>Assign Human Agent</label>
                 <select 
-                  value={selectedBooking.agent}
+                  value={agents.find(a => a.name === selectedBooking.agent)?.id || 0}
                   onChange={handleAgentChange}
                   style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--color-surface-high)', background: 'var(--color-surface)', color: 'var(--color-on-surface)', fontSize: '14px' }}
                 >
-                  {agents.map(a => <option key={a} value={a}>{a}</option>)}
+                  {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
               </div>
 
@@ -232,7 +331,24 @@ export default function Bookings() {
                   ) : (
                     <button disabled style={{ flex: 1, padding: '10px 16px', borderRadius: '6px', border: 'none', background: 'var(--color-surface-high)', color: 'var(--color-on-surface-variant)', fontWeight: '600' }}>✓ Confirmed</button>
                   )}
-                  <button className="btn-outline" onClick={() => { showToast('Rescheduling interface pending...', 'info'); closeModal(); }} style={{ flex: 1 }}>Reschedule</button>
+                  <button className="btn-outline" onClick={() => { 
+                    if (document.getElementById('reschedule-box').style.display === 'none') {
+                      document.getElementById('reschedule-box').style.display = 'flex';
+                    } else {
+                      handleReschedule();
+                    }
+                  }} style={{ flex: 1 }}>
+                    {rescheduleDate ? 'Confirm New Time' : 'Reschedule'}
+                  </button>
+                </div>
+                <div id="reschedule-box" style={{ display: 'none', flexDirection: 'column', gap: '8px', marginTop: '12px', padding: '12px', background: 'var(--color-surface)', borderRadius: '8px', border: '1px solid var(--color-outline-variant)' }}>
+                  <label style={{ fontSize: '12px', color: 'var(--color-on-surface-variant)' }}>Pick New Date & Time</label>
+                  <input 
+                    type="datetime-local" 
+                    value={rescheduleDate}
+                    onChange={(e) => setRescheduleDate(e.target.value)}
+                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--color-surface-high)', background: 'var(--color-surface-high)', color: 'var(--color-on-surface)' }}
+                  />
                 </div>
               </div>
 

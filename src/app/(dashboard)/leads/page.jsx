@@ -1,8 +1,11 @@
 "use client";
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { showToast } from '@/lib/toast';
+import { api } from '@/lib/api';
 
 export default function Leads() {
+  const router = useRouter();
   const [isDragOver, setIsDragOver] = useState(false);
   const [files, setFiles] = useState([]);
   const fileInputRef = useRef(null);
@@ -17,21 +20,56 @@ export default function Leads() {
     fallbackPhone: '+1 234 567 8900'
   });
 
-  // Dummy Leads Data for Table Preview
-  const dummyLeads = [
-    { id: 1, name: 'Alice Smith', phone: '+1 555-0101', course: 'Computer Science', status: 'Pending' },
-    { id: 2, name: 'Bob Johnson', phone: '+1 555-0102', course: 'Business Administration', status: 'Pending' },
-    { id: 3, name: 'Charlie Davis', phone: '+1 555-0103', course: 'Nursing', status: 'Pending' },
-    { id: 4, name: 'Diana Evans', phone: '+1 555-0104', course: 'Computer Science', status: 'Pending' },
-    { id: 5, name: 'Evan Wright', phone: '+1 555-0105', course: 'Engineering', status: 'Pending' },
-  ];
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch leads on mount
+  useEffect(() => {
+    fetchLeads();
+  }, []);
+
+  async function fetchLeads() {
+    setLoading(true);
+    try {
+      const response = await api.get('/api/leads');
+      if (response.success || Array.isArray(response)) {
+        // Handle both wrapped and unwrapped responses
+        setLeads(Array.isArray(response) ? response : response.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch leads:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const uploadFile = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    setLoading(true);
+    try {
+      const response = await api.post('/api/upload-csv', formData, true);
+      if (response.success) {
+        showToast(response.message, 'success');
+        fetchLeads(); // Refresh table
+      } else {
+        showToast(response.message || 'Upload failed', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'File upload failed', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragOver(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setFiles([...files, ...Array.from(e.dataTransfer.files)]);
-      showToast('CSV uploaded successfully', 'success');
+      const file = e.dataTransfer.files[0];
+      setFiles([...files, file]);
+      uploadFile(file);
     }
   };
 
@@ -47,8 +85,9 @@ export default function Leads() {
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      setFiles([...files, ...Array.from(e.target.files)]);
-      showToast('CSV uploaded successfully', 'success');
+      const file = e.target.files[0];
+      setFiles([...files, file]);
+      uploadFile(file);
     }
   };
 
@@ -70,8 +109,42 @@ export default function Leads() {
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-  const handleSaveLaunch = () => {
-    showToast('Agent configuration saved and launched!', 'success');
+  // Helper to format 24h time to 12h with AM/PM
+  const format12h = (time) => {
+    if (!time) return '';
+    const [hours, minutes] = time.split(':');
+    const h = parseInt(hours);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${minutes} ${ampm}`;
+  };
+
+  const handleSaveLaunch = async () => {
+    setLoading(true);
+    try {
+      const payload = {
+        callingDays: config.callingDays,
+        timeStart: config.timeStart,
+        timeEnd: config.timeEnd,
+        maxAttempts: parseInt(config.maxAttempts),
+        fallbackName: config.fallbackName,
+        fallbackPhone: config.fallbackPhone
+      };
+      
+      const response = await api.post('/api/campaign/launch', payload);
+      if (response.success) {
+        showToast('Agent configuration saved and launched!', 'success');
+        setTimeout(() => {
+          router.push('/knowledge-base');
+        }, 1200);
+      } else {
+        showToast(response.message || 'Failed to save configuration', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to save configuration', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -127,7 +200,7 @@ export default function Leads() {
       {/* Middle Section: Data Table Preview */}
       <div className="card">
         <h2 style={{ fontSize: '16px', marginBottom: '16px', fontWeight: '600' }}>2. Data Preview</h2>
-        <div className="table-container">
+        <div className="table-container" style={{ maxHeight: '500px', overflowY: 'auto' }}>
           <table className="table">
             <thead>
               <tr>
@@ -138,7 +211,7 @@ export default function Leads() {
               </tr>
             </thead>
             <tbody>
-              {dummyLeads.map(lead => (
+              {leads.length > 0 ? leads.map(lead => (
                 <tr key={lead.id}>
                   <td>{lead.name}</td>
                   <td style={{ fontFamily: 'monospace' }}>{lead.phone}</td>
@@ -157,11 +230,19 @@ export default function Leads() {
                     </span>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '32px', color: 'var(--color-on-surface-variant)' }}>
+                    {loading ? 'Loading leads...' : 'No leads found. Upload a CSV to get started.'}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
-        <p className="text-muted" style={{ fontSize: '13px', marginTop: '12px', textAlign: 'right' }}>Showing 5 preview rows.</p>
+        <p className="text-muted" style={{ fontSize: '13px', marginTop: '12px', textAlign: 'right' }}>
+          {leads.length > 0 ? `Showing ${leads.length} leads.` : ''}
+        </p>
       </div>
 
       {/* Bottom Section: Configuration */}
@@ -201,7 +282,10 @@ export default function Leads() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '24px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '14px', fontWeight: '500' }}>Calling Window Start</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', fontWeight: '500' }}>Calling Window Start</label>
+                <span style={{ fontSize: '12px', color: 'var(--color-primary)', fontWeight: '600' }}>{format12h(config.timeStart)}</span>
+              </div>
               <input 
                 type="time" 
                 name="timeStart"
@@ -211,7 +295,10 @@ export default function Leads() {
               />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '14px', fontWeight: '500' }}>Calling Window End</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', fontWeight: '500' }}>Calling Window End</label>
+                <span style={{ fontSize: '12px', color: 'var(--color-primary)', fontWeight: '600' }}>{format12h(config.timeEnd)}</span>
+              </div>
               <input 
                 type="time" 
                 name="timeEnd"

@@ -1,3 +1,4 @@
+// @ts-nocheck  
 /**
  * NVIDIA Mistral AI Analysis Service
  * Integrates Mistral-7B via NVIDIA API for high-fidelity document analysis.

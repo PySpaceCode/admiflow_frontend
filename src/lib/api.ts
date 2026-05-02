@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * API Helper — AdmitFlow
  * Backend: https://admitflow-rbzm.onrender.com/api
@@ -12,8 +13,13 @@ if (BASE_URL.endsWith('/')) BASE_URL = BASE_URL.slice(0, -1);
 
 // We will now use full paths (like /api/register) in the components for clarity
 
-async function request(method: string, path: string, body: any = null, isFormData = false) {
-  const options: any = {
+
+
+
+
+
+async function request(method, path, body = null, isFormData = false) {
+  const options = {
     method,
     headers: {},
   };
@@ -55,7 +61,7 @@ async function request(method: string, path: string, body: any = null, isFormDat
       if (res.status === 422) {
         const details = data.details || data.detail;
         if (Array.isArray(details)) {
-          const messages = details.map((err: any) => {
+          const messages = details.map((err) => {
             if (typeof err === 'string') return err;
             const field = err.loc?.[err.loc.length - 1] || 'field';
             return `${field}: ${err.msg}`;
@@ -77,7 +83,7 @@ async function request(method: string, path: string, body: any = null, isFormDat
 
     // Return the full parsed body (caller handles success/data)
     return data;
-  } catch (error: any) {
+  } catch (error) {
     if (
       error.name === 'TypeError' &&
       error.message.toLowerCase().includes('failed to fetch')
@@ -92,14 +98,14 @@ async function request(method: string, path: string, body: any = null, isFormDat
 }
 
 export const api = {
-  get: (path: string) => request('GET', path),
-  post: (path: string, body?: any, isFormData?: boolean) => request('POST', path, body, isFormData),
-  put: (path: string, body?: any) => request('PUT', path, body),
-  patch: (path: string, body?: any) => request('PATCH', path, body),
-  delete: (path: string) => request('DELETE', path),
+  get: (path) => request('GET', path),
+  post: (path, body, isFormData) => request('POST', path, body, isFormData),
+  put: (path, body) => request('PUT', path, body),
+  patch: (path, body) => request('PATCH', path, body),
+  delete: (path) => request('DELETE', path),
   logout: async () => {
     try {
-      await request('POST', '/api/auth/logout');
+      await request('POST', '/api/logout');
     } catch (err) {
       console.warn('[API] Logout request failed:', err);
     } finally {

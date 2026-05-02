@@ -6,6 +6,7 @@ import {
   Activity, PhoneOutgoing, Calendar as CalendarIcon, Cpu, ChevronRight 
 } from 'lucide-react';
 import MetricCard from '@/components/dashboard/MetricCard';
+import { api } from '@/lib/api';
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -28,31 +29,23 @@ export default function Dashboard() {
     setLoading(true);
     setError(null);
     try {
-      // Mock data
-      const statsData = { total_leads: 142, calls_made: 89, bookings: 12, conversion_rate: '8.4%' };
-      const activityData = [
-        { icon: PhoneOutgoing, action: 'Outbound call to John Doe completed', time: '10 mins ago', type: 'call' },
-        { icon: CalendarCheck, action: 'Booking confirmed for Jane Smith', time: '2 hours ago', type: 'booking' },
-        { icon: Cpu, action: 'AI Agent "Admissions Pro" updated', time: '5 hours ago', type: 'system' }
-      ];
-      const bookingsData = [
-        { lead_name: 'Alice Johnson', course: 'Software Engineering', datetime: 'Tomorrow, 10:00 AM', status: 'Confirmed' },
-        { lead_name: 'Bob Martin', course: 'Data Science', datetime: 'Tomorrow, 2:30 PM', status: 'Pending' }
-      ];
-      const chartRes = [
-        { day: 'Mon', max: 20, connected: 15, failed: 5 },
-        { day: 'Tue', max: 25, connected: 18, failed: 7 },
-        { day: 'Wed', max: 30, connected: 22, failed: 8 },
-        { day: 'Thu', max: 20, connected: 16, failed: 4 },
-        { day: 'Fri', max: 35, connected: 30, failed: 5 },
-        { day: 'Sat', max: 40, connected: 35, failed: 5 },
-        { day: 'Sun', max: 45, connected: 42, failed: 3 }
-      ];
-
-      setStats(statsData);
-      setActivity(activityData);
-      setBookings(bookingsData);
-      setChartData(chartRes);
+      const response = await api.get('/api/stats');
+      if (response.success) {
+        const { stats: statsData, activity: activityData, bookings: bookingsData, chartData: chartRes } = response.data;
+        
+        setStats(statsData);
+        
+        // Map activity data to include icons
+        const mappedActivity = activityData.map(item => ({
+          ...item,
+          icon: item.type === 'call' ? PhoneOutgoing : CalendarCheck,
+          time: new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + (new Date(item.time).toDateString() === new Date().toDateString() ? '' : ' ' + new Date(item.time).toLocaleDateString())
+        }));
+        setActivity(mappedActivity);
+        
+        setBookings(bookingsData);
+        setChartData(chartRes);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
